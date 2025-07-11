@@ -16,6 +16,41 @@ services:
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
       # Volume nomeado para persistir os dados do banco
       - pgdata:/var/lib/postgresql/data
+  keycloak:
+    # Imagem oficial do Keycloak
+    image: quay.io/keycloak/keycloak:latest
+    
+    # Variáveis de ambiente para criar o usuário administrador inicial
+    # IMPORTANTE: Em produção, utilize segredos (Docker Secrets) para o password.
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    
+    # Comando para iniciar o Keycloak em modo de desenvolvimento.
+    # Este modo utiliza um banco de dados H2 em memória e é mais rápido para iniciar.
+    command: start-dev
+    
+    # Mapeamento da porta do container (8080) para a porta da sua máquina (8080)
+    ports:
+      - "8080:8080"
+
+    # Novo: Montagem do volume nomeado no diretório de dados do Keycloak.
+    # Isso garante que todos os dados criados dentro do container persistam.
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      
+    # Define uma rede para os nossos serviços. Isso facilitará a comunicação
+    # entre o container da API Quarkus e o container do Keycloak no futuro.
+    networks:
+      - durvalcrm-net
+
+# Definição da rede que será criada
+networks:
+  durvalcrm-net:
+    driver: bridge
 
 volumes:
   pgdata:
+    driver: local
+  keycloak_data:
+    driver: local
