@@ -47,7 +47,9 @@ public class AssociadoRepositoryImpl implements AssociadoRepository {
 
     @Override
     public Optional<Associado> findById(UUID id) {
-        return AssociadoEntity.<AssociadoEntity>findByIdOptional(id)
+        // Corrigido: Filtra apenas associados ativos
+        return AssociadoEntity.<AssociadoEntity>find("id = ?1 and ativo = true", id)
+                .firstResultOptional()
                 .map(mapper::toDomain);
     }
 
