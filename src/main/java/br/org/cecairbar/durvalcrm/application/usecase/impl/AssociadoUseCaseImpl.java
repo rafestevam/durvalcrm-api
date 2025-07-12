@@ -12,7 +12,6 @@ import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class AssociadoUseCaseImpl implements AssociadoUseCase {
@@ -25,15 +24,15 @@ public class AssociadoUseCaseImpl implements AssociadoUseCase {
 
     @Override
     public List<AssociadoDTO> findAll(String search) {
-        return associadoRepository.findAll(search).stream()
-                .map(mapper::toDTO)
-                .collect(Collectors.toList());
+        // Usando o método toDTOList que recebe List<Associado>
+        List<Associado> associados = associadoRepository.findAll(search);
+        return mapper.toDTOList(associados);
     }
 
     @Override
     public AssociadoDTO findById(UUID id) {
         return associadoRepository.findById(id)
-                .map(mapper::toDTO)
+                .map(mapper::toDTO)  // toDTO(Associado)
                 .orElseThrow(() -> new NotFoundException("Associado não encontrado"));
     }
 
@@ -41,13 +40,21 @@ public class AssociadoUseCaseImpl implements AssociadoUseCase {
     public AssociadoDTO create(AssociadoDTO associadoDTO) {
         // Validações de negócio
         associadoRepository.findByCpf(associadoDTO.getCpf())
-                .ifPresent(a -> { throw new WebApplicationException("CPF já cadastrado", Response.Status.CONFLICT); });
+                .ifPresent(a -> { 
+                    throw new WebApplicationException("CPF já cadastrado", Response.Status.CONFLICT); 
+                });
+                
         associadoRepository.findByEmail(associadoDTO.getEmail())
-                .ifPresent(a -> { throw new WebApplicationException("E-mail já cadastrado", Response.Status.CONFLICT); });
+                .ifPresent(a -> { 
+                    throw new WebApplicationException("E-mail já cadastrado", Response.Status.CONFLICT); 
+                });
 
+        // Converte DTO para Domain, define como ativo e salva
         Associado associado = mapper.toDomain(associadoDTO);
         associado.setAtivo(true); // Garante que novos associados sejam ativos
-        return mapper.toDTO(associadoRepository.save(associado));
+        
+        Associado savedAssociado = associadoRepository.save(associado);
+        return mapper.toDTO(savedAssociado);
     }
 
     @Override
@@ -57,8 +64,10 @@ public class AssociadoUseCaseImpl implements AssociadoUseCase {
                 // Atualiza os campos do associado existente
                 existingAssociado.setNomeCompleto(associadoDTO.getNomeCompleto());
                 existingAssociado.setTelefone(associadoDTO.getTelefone());
-                // Adicionar outras lógicas de atualização se necessário (CPF e email geralmente não mudam)
-                return mapper.toDTO(associadoRepository.save(existingAssociado));
+                // Nota: CPF e email geralmente não devem ser alterados após criação
+                
+                Associado updatedAssociado = associadoRepository.save(existingAssociado);
+                return mapper.toDTO(updatedAssociado);
             })
             .orElseThrow(() -> new NotFoundException("Associado não encontrado"));
     }
