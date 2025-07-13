@@ -1,50 +1,45 @@
 version: '3.8'
 
 services:
+  # Serviço do Banco de Dados PostgreSQL (sem alterações)
   postgres-db:
     image: postgres:15-alpine
     container_name: durvalcrm_postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: durvalcrm_user
-      POSTGRES_PASSWORD: durvaldev@123
+      POSTGRES_PASSWORD: durvaldev@123 # Troque por uma senha segura
       POSTGRES_DB: durvalcrm_dev
     ports:
       - "5432:5432"
     volumes:
-      # Monta o script de inicialização para criar as tabelas
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
-      # Volume nomeado para persistir os dados do banco
       - pgdata:/var/lib/postgresql/data
-  keycloak:
-    # Imagem oficial do Keycloak
-    image: quay.io/keycloak/keycloak:latest
-    
-    # Variáveis de ambiente para criar o usuário administrador inicial
-    # IMPORTANTE: Em produção, utilize segredos (Docker Secrets) para o password.
-    environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
-    
-    # Comando para iniciar o Keycloak em modo de desenvolvimento.
-    # Este modo utiliza um banco de dados H2 em memória e é mais rápido para iniciar.
-    command: start-dev
-    
-    # Mapeamento da porta do container (8080) para a porta da sua máquina (8080)
-    ports:
-      - "8080:8080"
-
-    # Novo: Montagem do volume nomeado no diretório de dados do Keycloak.
-    # Isso garante que todos os dados criados dentro do container persistam.
-    volumes:
-      - keycloak_data:/opt/keycloak/data
-      
-    # Define uma rede para os nossos serviços. Isso facilitará a comunicação
-    # entre o container da API Quarkus e o container do Keycloak no futuro.
     networks:
       - durvalcrm-net
 
-# Definição da rede que será criada
+  # Serviço do Keycloak com Healthcheck
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: durvalcrm_keycloak
+    environment:
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    command: start-dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+    networks:
+      - durvalcrm-net
+    # Healthcheck para verificar quando o Keycloak está pronto
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
 networks:
   durvalcrm-net:
     driver: bridge
