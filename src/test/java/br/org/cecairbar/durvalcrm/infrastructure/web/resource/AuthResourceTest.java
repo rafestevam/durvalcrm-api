@@ -1,7 +1,6 @@
 package br.org.cecairbar.durvalcrm.infrastructure.web.resource;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
