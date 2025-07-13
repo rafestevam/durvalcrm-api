@@ -7,14 +7,15 @@ import org.junit.jupiter.api.Test;
 
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 
 @QuarkusTest
 public class AuthResourceTest {
 
     @Test
     void testGetLoginInfo_Public() {
-        // Testa se o endpoint de informações de login está acessível sem autenticação
         given()
         .when()
           .get("/auth/login-info")
@@ -22,92 +23,89 @@ public class AuthResourceTest {
           .statusCode(200)
           .contentType(ContentType.JSON)
           .body("authServerUrl", notNullValue())
-          .body("clientId", is("durvalcrm-app"))
-          .body("redirectUri", is("http://localhost:3000/callback"));
+          .body("clientId", notNullValue())
+          .body("realm", notNullValue());
+    }
+
+    @Test
+    void testGetLoginInfo_ReturnsCorrectValues() {
+        given()
+        .when()
+          .get("/auth/login-info")
+        .then()
+          .statusCode(200)
+          .contentType(ContentType.JSON)
+          .body("authServerUrl", anyOf(
+              equalTo("http://localhost:8080/realms/durval-crm"),
+              equalTo("")  // Pode estar vazio em ambiente de teste
+          ))
+          .body("clientId", equalTo("durvalcrm-app"))
+          .body("realm", equalTo("durval-crm"));
+    }
+
+    @Test
+    @TestSecurity(user = "testuser", roles = { "user" })
+    void testGetLoginInfo_Authenticated() {
+        given()
+        .when()
+          .get("/auth/login-info")
+        .then()
+          .statusCode(200)
+          .contentType(ContentType.JSON)
+          .body("authServerUrl", notNullValue())
+          .body("clientId", equalTo("durvalcrm-app"))
+          .body("realm", equalTo("durval-crm"));
+    }
+
+    @Test
+    void testGetLoginInfo_ReturnsCorrectStructure() {
+        given()
+        .when()
+          .get("/auth/login-info")
+        .then()
+          .statusCode(200)
+          .contentType(ContentType.JSON)
+          .body("size()", is(3))  // Esperamos exatamente 3 campos: authServerUrl, clientId, realm
+          .body("authServerUrl", notNullValue())
+          .body("clientId", notNullValue())
+          .body("realm", notNullValue());
+    }
+
+    @Test
+    void testLogout_Public() {
+        given()
+        .when()
+          .get("/auth/logout")
+        .then()
+          .statusCode(200)
+          .contentType(ContentType.JSON)
+          .body("message", notNullValue())
+          .body("logoutUrl", notNullValue());
     }
 
     @Test
     @TestSecurity(user = "testuser", roles = { "user" })
     void testLogout_Authenticated() {
-        // Testa o endpoint de logout com usuário autenticado
         given()
-          .contentType(ContentType.JSON)
-          .body("{}")
         .when()
-          .post("/auth/logout")
+          .get("/auth/logout")
         .then()
           .statusCode(200)
           .contentType(ContentType.JSON)
-          .body("message", is("Logout realizado com sucesso"));
+          .body("message", is("Logout realizado com sucesso"))
+          .body("logoutUrl", notNullValue());
     }
 
     @Test
-    void testLogout_Unauthenticated() {
-        // Testa se o endpoint de logout requer autenticação
-        given()
-          .contentType(ContentType.JSON)
-          .body("{}")
-        .when()
-          .post("/auth/logout")
-        .then()
-          .statusCode(401); // Unauthorized
-    }
-
-    @Test
-    @TestSecurity(user = "admin", roles = { "admin" })
-    void testGetLoginInfo_Authenticated() {
-        // Testa se usuários autenticados também podem acessar as informações de login
+    void testLogout_ReturnsCorrectStructure() {
         given()
         .when()
-          .get("/auth/login-info")
+          .get("/auth/logout")
         .then()
           .statusCode(200)
           .contentType(ContentType.JSON)
-          .body("authServerUrl", notNullValue())
-          .body("clientId", is("durvalcrm-app"));
-    }
-
-    @Test
-    @TestSecurity(user = "user1", roles = { "user" })
-    void testLogout_WithDifferentUser() {
-        // Testa o logout com diferentes tipos de usuário
-        given()
-          .contentType(ContentType.JSON)
-          .body("{}")
-        .when()
-          .post("/auth/logout")
-        .then()
-          .statusCode(200)
-          .contentType(ContentType.JSON)
-          .body("message", is("Logout realizado com sucesso"));
-    }
-
-    @Test
-    @TestSecurity(user = "testuser", roles = { "user" })
-    void testLogout_EmptyBody() {
-        // Testa o logout sem corpo da requisição
-        given()
-          .contentType(ContentType.JSON)
-        .when()
-          .post("/auth/logout")
-        .then()
-          .statusCode(200)
-          .contentType(ContentType.JSON)
-          .body("message", is("Logout realizado com sucesso"));
-    }
-
-    @Test
-    void testGetLoginInfo_ReturnsCorrectStructure() {
-        // Testa se a estrutura de resposta está correta
-        given()
-        .when()
-          .get("/auth/login-info")
-        .then()
-          .statusCode(200)
-          .contentType(ContentType.JSON)
-          .body("size()", is(3)) // Deve ter exatamente 3 campos
-          .body("authServerUrl", notNullValue())
-          .body("clientId", notNullValue())
-          .body("redirectUri", notNullValue());
+          .body("size()", is(2))  // Esperamos exatamente 2 campos: message e logoutUrl
+          .body("message", notNullValue())
+          .body("logoutUrl", notNullValue());
     }
 }

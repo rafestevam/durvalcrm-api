@@ -1,108 +1,84 @@
 package br.org.cecairbar.durvalcrm.infrastructure.web.resource;
 
-import br.org.cecairbar.durvalcrm.application.dto.AuthDTO;
-import io.quarkus.security.Authenticated;
-import jakarta.ws.rs.*;
+import jakarta.annotation.security.PermitAll;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.SecurityContext;
-import jakarta.ws.rs.core.Context;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.jboss.logging.Logger;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @Path("/auth")
 @Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
 public class AuthResource {
 
-    @Context
-    SecurityContext securityContext;
+    private static final Logger LOG = Logger.getLogger(AuthResource.class);
+
+    @ConfigProperty(name = "quarkus.oidc.auth-server-url", defaultValue = "http://localhost:8080/realms/durval-crm")
+    String authServerUrl;
+
+    @ConfigProperty(name = "quarkus.oidc.client-id", defaultValue = "durvalcrm-app")
+    String clientId;
 
     /**
-     * Endpoint público que retorna informações sobre como fazer login
-     * e informações do usuário se estiver autenticado
+     * Endpoint público que retorna informações necessárias para o frontend
+     * configurar a autenticação OIDC/Keycloak
      */
     @GET
     @Path("/login-info")
-    public Response getLoginInfo() {
-        AuthDTO.LoginInfoResponse loginInfo = new AuthDTO.LoginInfoResponse();
+    @PermitAll
+    public Map<String, Object> getLoginInfo() {
+        LOG.infof("Retornando informações de login - authServerUrl: %s, clientId: %s", authServerUrl, clientId);
         
-        try {
-            // Verifica se há usuário autenticado via SecurityContext
-            if (securityContext != null && securityContext.getUserPrincipal() != null) {
-                loginInfo.setAuthenticated(true);
-                loginInfo.setUsername(securityContext.getUserPrincipal().getName());
-                loginInfo.setEmail(null); // Não disponível via SecurityContext básico
-                loginInfo.setName(securityContext.getUserPrincipal().getName());
-            } else {
-                loginInfo.setAuthenticated(false);
-            }
-        } catch (Exception e) {
-            // Se não conseguir acessar o SecurityContext, assume que não está autenticado
-            loginInfo.setAuthenticated(false);
-        }
+        Map<String, Object> response = new HashMap<>();
+        response.put("authServerUrl", authServerUrl);
+        response.put("clientId", clientId);
+        response.put("realm", extractRealmFromUrl(authServerUrl));
         
-        // Informações sobre o processo de login (sempre presentes)
-        loginInfo.setLoginUrl("/q/dev/io.quarkus.quarkus-oidc/provider");
-        loginInfo.setProvider("Keycloak");
-        loginInfo.setRealm("durval-crm");
-        
-        return Response.ok(loginInfo).build();
+        return response;
     }
 
     /**
-     * Endpoint para fazer logout do usuário
-     * Funciona tanto para usuários autenticados quanto não autenticados
+     * Endpoint para logout - invalida a sessão
+     * Marcado como PermitAll para ser acessível sem autenticação
      */
-    @POST
+    @GET
     @Path("/logout")
-    public Response logout() {
-        AuthDTO.LogoutResponse response = new AuthDTO.LogoutResponse();
+    @PermitAll
+    public Map<String, String> logout() {
+        LOG.info("Endpoint de logout acessado");
         
-        // Para manter compatibilidade com os testes, sempre retorna sucesso
-        response.setMessage("Logout realizado com sucesso");
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Logout realizado com sucesso");
+        response.put("logoutUrl", buildLogoutUrl());
         
-        return Response.ok(response).build();
+        return response;
     }
 
     /**
-     * Endpoint protegido que retorna informações detalhadas do usuário autenticado
+     * Extrai o nome do realm da URL do servidor de autenticação
      */
-    @GET
-    @Path("/user-info")
-    @Authenticated
-    public Response getUserInfo() {
-        AuthDTO.UserInfoResponse userInfo = new AuthDTO.UserInfoResponse();
-        
-        if (securityContext != null && securityContext.getUserPrincipal() != null) {
-            userInfo.setSubject(securityContext.getUserPrincipal().getName());
-            userInfo.setUsername(securityContext.getUserPrincipal().getName());
-            userInfo.setEmail(null); // Não disponível via SecurityContext básico
-            userInfo.setName(securityContext.getUserPrincipal().getName());
-            userInfo.setGroups(null); // Não disponível via SecurityContext básico
-            userInfo.setRoles(null); // Não disponível via SecurityContext básico
+    private String extractRealmFromUrl(String url) {
+        if (url == null || url.isEmpty()) {
+            return "durval-crm";
         }
         
-        return Response.ok(userInfo).build();
+        String[] parts = url.split("/realms/");
+        if (parts.length > 1) {
+            return parts[1];
+        }
+        
+        return "durval-crm";
     }
 
     /**
-     * Endpoint para verificar se o usuário está autenticado
+     * Constrói a URL de logout do Keycloak
      */
-    @GET
-    @Path("/check")
-    public Response checkAuthentication() {
-        AuthDTO.AuthCheckResponse status = new AuthDTO.AuthCheckResponse();
-        
-        try {
-            if (securityContext != null && securityContext.getUserPrincipal() != null) {
-                status.setAuthenticated(true);
-                status.setUsername(securityContext.getUserPrincipal().getName());
-            } else {
-                status.setAuthenticated(false);
-            }
-        } catch (Exception e) {
-            status.setAuthenticated(false);
-        }
-        
-        return Response.ok(status).build();
+    private String buildLogoutUrl() {
+        return authServerUrl + "/protocol/openid-connect/logout";
     }
 }
