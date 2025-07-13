@@ -24,7 +24,7 @@ public class AssociadoResourceTest {
     @Transactional
     public void cleanDatabase() {
         // Limpa o banco antes de cada teste para garantir isolamento
-        AssociadoEntity.update("ativo = false");
+        AssociadoEntity.deleteAll();
     }
 
     @Test
