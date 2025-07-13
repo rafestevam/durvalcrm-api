@@ -4,6 +4,7 @@ import br.org.cecairbar.durvalcrm.application.dto.AssociadoDTO;
 import br.org.cecairbar.durvalcrm.application.usecase.AssociadoUseCase;
 import io.quarkus.security.Authenticated;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -31,14 +32,14 @@ public class AssociadoResource {
     }
 
     @POST
-    public Response create(AssociadoDTO associadoDTO) {
+    public Response create(@Valid AssociadoDTO associadoDTO) {
         AssociadoDTO created = associadoUseCase.create(associadoDTO);
         return Response.created(URI.create("/associados/" + created.getId())).entity(created).build();
     }
 
     @PUT
     @Path("/{id}")
-    public Response update(@PathParam("id") UUID id, AssociadoDTO associadoDTO) {
+    public Response update(@PathParam("id") UUID id, @Valid AssociadoDTO associadoDTO) {
         return Response.ok(associadoUseCase.update(id, associadoDTO)).build();
     }
 
