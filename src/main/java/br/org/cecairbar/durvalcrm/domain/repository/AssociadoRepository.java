@@ -13,4 +13,5 @@ public interface AssociadoRepository {
     void deleteById(UUID id);
     Optional<Associado> findByCpf(String cpf);
     Optional<Associado> findByEmail(String email);
+    List<Associado> findByAtivo(Boolean ativo);
 }

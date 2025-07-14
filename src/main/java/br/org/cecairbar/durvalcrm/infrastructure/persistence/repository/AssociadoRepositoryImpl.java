@@ -84,4 +84,12 @@ public class AssociadoRepositoryImpl implements AssociadoRepository {
                 .firstResultOptional()
                 .map(mapper::toDomain);
     }
+
+    @Override
+    public List<Associado> findByAtivo(Boolean ativo) {
+        List<AssociadoEntity> entities = AssociadoEntity.<AssociadoEntity>find("ativo = ?1", ativo).list();
+        return mapper.toDomainList(entities);
+    }
+
+    
 }
