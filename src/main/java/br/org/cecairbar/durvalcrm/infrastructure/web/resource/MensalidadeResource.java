@@ -7,14 +7,16 @@ import br.org.cecairbar.durvalcrm.application.dto.ResumoMensalidadesDTO;
 import br.org.cecairbar.durvalcrm.application.dto.ResultadoGeracaoDTO;
 
 import jakarta.annotation.security.RolesAllowed;
-import jakarta.annotation.security.PermitAll; // Added missing import
+import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @Path("/api/mensalidades")
 @Produces(MediaType.APPLICATION_JSON)
@@ -35,26 +37,49 @@ public class MensalidadeResource {
     @GET
     @Path("/resumo")
     public Response obterResumo(
-        @QueryParam("mes") @Min(1) @Max(12) int mes,
-        @QueryParam("ano") @Min(2020) @Max(2030) int ano
+        @QueryParam("mes") Integer mes,
+        @QueryParam("ano") Integer ano
     ) {
         try {
+            // Se não fornecidos, usar mês/ano atual
+            if (mes == null || ano == null) {
+                LocalDate hoje = LocalDate.now();
+                mes = mes != null ? mes : hoje.getMonthValue();
+                ano = ano != null ? ano : hoje.getYear();
+            }
+
             // Validação dos parâmetros
-            if (mes == 0 || ano == 0) {
+            if (mes < 1 || mes > 12) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Parâmetros mes e ano são obrigatórios")
+                    .entity(Map.of(
+                        "error", "Parâmetro 'mes' deve estar entre 1 e 12",
+                        "status", 400
+                    ))
+                    .build();
+            }
+
+            if (ano < 2020 || ano > 2030) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(
+                        "error", "Parâmetro 'ano' deve estar entre 2020 e 2030",
+                        "status", 400
+                    ))
                     .build();
             }
 
             ResumoMensalidadesDTO resumo = consultarMensalidadesUseCase.obterResumo(mes, ano);
             return Response.ok(resumo).build();
+            
         } catch (Exception e) {
-            // Log do erro para debug
             System.err.println("Erro ao obter resumo das mensalidades: " + e.getMessage());
             e.printStackTrace();
             
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Erro ao obter resumo das mensalidades: " + e.getMessage())
+                .entity(Map.of(
+                    "error", "Erro interno do servidor",
+                    "message", e.getMessage(),
+                    "status", 500
+                ))
                 .build();
         }
     }
@@ -65,25 +90,49 @@ public class MensalidadeResource {
      */
     @GET
     public Response listarPorPeriodo(
-        @QueryParam("mes") @Min(1) @Max(12) int mes,
-        @QueryParam("ano") @Min(2020) @Max(2030) int ano
+        @QueryParam("mes") Integer mes,
+        @QueryParam("ano") Integer ano
     ) {
         try {
+            // Se não fornecidos, usar mês/ano atual
+            if (mes == null || ano == null) {
+                LocalDate hoje = LocalDate.now();
+                mes = mes != null ? mes : hoje.getMonthValue();
+                ano = ano != null ? ano : hoje.getYear();
+            }
+
             // Validação dos parâmetros
-            if (mes == 0 || ano == 0) {
+            if (mes < 1 || mes > 12) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Parâmetros mes e ano são obrigatórios")
+                    .entity(Map.of(
+                        "error", "Parâmetro 'mes' deve estar entre 1 e 12",
+                        "status", 400
+                    ))
+                    .build();
+            }
+
+            if (ano < 2020 || ano > 2030) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(
+                        "error", "Parâmetro 'ano' deve estar entre 2020 e 2030",
+                        "status", 400
+                    ))
                     .build();
             }
 
             List<MensalidadeDTO> mensalidades = consultarMensalidadesUseCase.listarPorPeriodo(mes, ano);
             return Response.ok(mensalidades).build();
+            
         } catch (Exception e) {
             System.err.println("Erro ao listar mensalidades: " + e.getMessage());
             e.printStackTrace();
             
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Erro ao listar mensalidades: " + e.getMessage())
+                .entity(Map.of(
+                    "error", "Erro interno do servidor",
+                    "message", e.getMessage(),
+                    "status", 500
+                ))
                 .build();
         }
     }
@@ -96,21 +145,38 @@ public class MensalidadeResource {
     @Path("/{id}")
     public Response obterPorId(@PathParam("id") String id) {
         try {
+            if (id == null || id.trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(
+                        "error", "ID da mensalidade é obrigatório",
+                        "status", 400
+                    ))
+                    .build();
+            }
+
             MensalidadeDTO mensalidade = consultarMensalidadesUseCase.obterPorId(id);
             
             if (mensalidade == null) {
                 return Response.status(Response.Status.NOT_FOUND)
-                    .entity("Mensalidade não encontrada")
+                    .entity(Map.of(
+                        "error", "Mensalidade não encontrada",
+                        "status", 404
+                    ))
                     .build();
             }
             
             return Response.ok(mensalidade).build();
+            
         } catch (Exception e) {
             System.err.println("Erro ao obter mensalidade por ID: " + e.getMessage());
             e.printStackTrace();
             
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Erro ao obter mensalidade: " + e.getMessage())
+                .entity(Map.of(
+                    "error", "Erro interno do servidor",
+                    "message", e.getMessage(),
+                    "status", 500
+                ))
                 .build();
         }
     }
@@ -123,14 +189,28 @@ public class MensalidadeResource {
     @Path("/status/{status}")
     public Response listarPorStatus(@PathParam("status") String status) {
         try {
+            if (status == null || status.trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(
+                        "error", "Status é obrigatório",
+                        "status", 400
+                    ))
+                    .build();
+            }
+
             List<MensalidadeDTO> mensalidades = consultarMensalidadesUseCase.listarPorStatus(status);
             return Response.ok(mensalidades).build();
+            
         } catch (Exception e) {
             System.err.println("Erro ao listar mensalidades por status: " + e.getMessage());
             e.printStackTrace();
             
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Erro ao listar mensalidades por status: " + e.getMessage())
+                .entity(Map.of(
+                    "error", "Erro interno do servidor",
+                    "message", e.getMessage(),
+                    "status", 500
+                ))
                 .build();
         }
     }
@@ -142,46 +222,111 @@ public class MensalidadeResource {
     @POST
     @Path("/gerar-cobrancas")
     public Response gerarCobrancas(
-        @QueryParam("mes") @Min(1) @Max(12) int mes,
-        @QueryParam("ano") @Min(2020) @Max(2030) int ano
+        @QueryParam("mes") Integer mes,
+        @QueryParam("ano") Integer ano
     ) {
         try {
+            // Se não fornecidos, usar mês/ano atual
+            if (mes == null || ano == null) {
+                LocalDate hoje = LocalDate.now();
+                mes = mes != null ? mes : hoje.getMonthValue();
+                ano = ano != null ? ano : hoje.getYear();
+            }
+
             // Validação dos parâmetros
-            if (mes == 0 || ano == 0) {
+            if (mes < 1 || mes > 12) {
                 return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("Parâmetros mes e ano são obrigatórios")
+                    .entity(Map.of(
+                        "error", "Parâmetro 'mes' deve estar entre 1 e 12",
+                        "status", 400
+                    ))
+                    .build();
+            }
+
+            if (ano < 2020 || ano > 2030) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(
+                        "error", "Parâmetro 'ano' deve estar entre 2020 e 2030",
+                        "status", 400
+                    ))
                     .build();
             }
 
             ResultadoGeracaoDTO resultado = gerarCobrancasUseCase.executar(mes, ano);
             return Response.ok(resultado).build();
+            
         } catch (Exception e) {
             System.err.println("Erro ao gerar cobranças: " + e.getMessage());
             e.printStackTrace();
             
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Erro ao gerar cobranças: " + e.getMessage())
+                .entity(Map.of(
+                    "error", "Erro interno do servidor",
+                    "message", e.getMessage(),
+                    "status", 500
+                ))
                 .build();
         }
     }
 
     /**
-     * Endpoint público para webhook de PIX (se necessário)
+     * Endpoint para obter QR Code de uma mensalidade
+     * GET /mensalidades/{id}/qrcode
+     */
+    @GET
+    @Path("/{id}/qrcode")
+    public Response obterQRCode(@PathParam("id") String id) {
+        try {
+            if (id == null || id.trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(
+                        "error", "ID da mensalidade é obrigatório",
+                        "status", 400
+                    ))
+                    .build();
+            }
+
+            // TODO: Implementar geração do QR Code PIX
+            String qrCode = "00020101021243650016BR.GOV.BCB.PIX013671234567890123456789";
+            
+            return Response.ok(Map.of("qrCode", qrCode)).build();
+            
+        } catch (Exception e) {
+            System.err.println("Erro ao gerar QR Code: " + e.getMessage());
+            e.printStackTrace();
+            
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(Map.of(
+                    "error", "Erro interno do servidor",
+                    "message", e.getMessage(),
+                    "status", 500
+                ))
+                .build();
+        }
+    }
+
+    /**
+     * Endpoint público para webhook de PIX
      * POST /mensalidades/webhook/pix
      */
     @POST
     @Path("/webhook/pix")
-    @PermitAll // This endpoint now has the proper import for PermitAll
+    @PermitAll
     public Response webhookPix(String payload) {
         try {
             // TODO: Implementar processamento do webhook PIX
-            return Response.ok().build();
+            System.out.println("Webhook PIX recebido: " + payload);
+            return Response.ok(Map.of("status", "received")).build();
+            
         } catch (Exception e) {
             System.err.println("Erro no webhook PIX: " + e.getMessage());
             e.printStackTrace();
             
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("Erro no processamento do webhook")
+                .entity(Map.of(
+                    "error", "Erro no processamento do webhook",
+                    "status", 500
+                ))
                 .build();
         }
     }
