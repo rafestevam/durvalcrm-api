@@ -10,8 +10,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.UUID;
 
 @ApplicationScoped
 public class GerarCobrancasMensaisUseCase {
