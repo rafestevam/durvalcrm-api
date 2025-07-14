@@ -16,7 +16,7 @@ public class HealthResourceTest {
         // Testa se o endpoint de status está acessível sem autenticação
         given()
         .when()
-          .get("/health/status")
+          .get("/health/api/status")
         .then()
           .statusCode(200)
           .contentType(ContentType.JSON)
