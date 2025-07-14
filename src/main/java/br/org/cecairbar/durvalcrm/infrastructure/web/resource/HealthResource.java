@@ -10,7 +10,7 @@ import java.util.Map;
 public class HealthResource {
 
     @GET
-    @Path("/status")
+    @Path("/api/status")
     public Response getStatus() {
         Map<String, Object> status = Map.of(
             "status", "UP",

@@ -11,7 +11,7 @@ import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.UUID;
 
-@Path("/associados")
+@Path("/api/associados")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @Authenticated // Protege todos os endpoints deste resource
