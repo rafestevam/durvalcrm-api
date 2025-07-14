@@ -1,6 +1,6 @@
 <#macro registrationLayout bodyClass="" displayInfo=false displayMessage=true displayRequiredFields=false>
 <!DOCTYPE html>
-<html class="${properties.kcHtmlClass!}"<#if realm.internationalizationEnabled> lang="${locale.currentLanguageTag}"</#if>>
+<html <#if realm.internationalizationEnabled> lang="${locale.currentLanguageTag}"</#if>>
 
 <head>
     <meta charset="utf-8">
@@ -47,7 +47,7 @@
     <!-- Header com logo DurvalCRM -->
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <div class="flex justify-center">
-        <img class="h-6 w-auto" src="${url.resourcesPath}/img/logo-durvalcrm.svg" alt="DurvalCRM" />
+        <img class="w-25 h-25" style="width: 100px; height: 100px;" src="${url.resourcesPath}/img/logo-durvalcrm.svg" alt="DurvalCRM" />
       </div>
       <h2 class="mt-6 text-center text-4xl font-bold tracking-tight text-blue-600">
         DurvalCRM
