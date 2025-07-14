@@ -30,6 +30,7 @@ services:
       - "8080:8080"
     volumes:
       - keycloak_data:/opt/keycloak/data
+      - ./keycloak/themes:/opt/keycloak/themes
     networks:
       - durvalcrm-net
     # Healthcheck para verificar quando o Keycloak está pronto
