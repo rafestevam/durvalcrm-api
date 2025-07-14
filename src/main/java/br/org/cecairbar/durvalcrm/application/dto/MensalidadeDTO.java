@@ -21,14 +21,14 @@ public class MensalidadeDTO {
     @JsonFormat(pattern = "yyyy-MM-dd")
     public LocalDate dataVencimento;
     
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     public Instant dataPagamento;
     
     public String qrCodePix;
     public String identificadorPix;
     public boolean vencida;
     
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", timezone = "UTC")
     public Instant criadoEm;
     
     // Campos calculados úteis para o frontend
