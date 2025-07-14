@@ -5,13 +5,10 @@ import br.org.cecairbar.durvalcrm.domain.model.Associado;
 import br.org.cecairbar.durvalcrm.infrastructure.persistence.entity.AssociadoEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.factory.Mappers;
 import java.util.List;
 
-@Mapper(componentModel = "cdi") // Usar injeção de dependência do Quarkus
+@Mapper(componentModel = "cdi")
 public interface AssociadoMapper {
-
-    AssociadoMapper INSTANCE = Mappers.getMapper(AssociadoMapper.class);
 
     // =============================
     // MAPEAMENTOS DOMAIN <-> DTO (Principais)
