@@ -101,4 +101,64 @@ public class MensalidadeRepositoryImpl implements MensalidadeRepository {
             .firstResultOptional()
             .map(MensalidadeEntity::toDomain);
     }
+
+    @Override
+    public List<Mensalidade> findByStatus(String status) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findByStatus'");
+    }
+
+    @Override
+    public List<Mensalidade> findByAssociadoIdAndMesEAno(UUID associadoId, int mes, int ano) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findByAssociadoIdAndMesEAno'");
+    }
+
+    @Override
+    public long countByStatusAndMesEAno(String status, int mes, int ano) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'countByStatusAndMesEAno'");
+    }
+
+    @Override
+    public List<Mensalidade> findAll() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findAll'");
+    }
+
+    @Override
+    public List<Mensalidade> findByAno(int ano) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findByAno'");
+    }
+
+    @Override
+    public void update(Mensalidade mensalidade) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'update'");
+    }
+
+    @Override
+    public void delete(UUID id) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+    }
+
+    @Override
+    public List<Mensalidade> findPendentesByMesEAno(int mes, int ano) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findPendentesByMesEAno'");
+    }
+
+    @Override
+    public List<Mensalidade> findPagasByMesEAno(int mes, int ano) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findPagasByMesEAno'");
+    }
+
+    @Override
+    public List<Mensalidade> findAtrasadasByMesEAno(int mes, int ano) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findAtrasadasByMesEAno'");
+    }
 }
