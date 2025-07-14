@@ -228,11 +228,12 @@ public class AuthResource {
     }
 
     /**
-     * Endpoint para refrescar token (se necessário)
+     * Endpoint para refrescar token - CORRIGIDO
      */
     @POST
     @Path("/refresh")
     @PermitAll
+    @Consumes(MediaType.APPLICATION_FORM_URLENCODED)  // ✅ Sobrescreve o @Consumes da classe
     public Response refreshToken(@FormParam("refresh_token") String refreshToken) {
         try {
             if (refreshToken == null || refreshToken.trim().isEmpty()) {
