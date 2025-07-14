@@ -3,11 +3,12 @@ package br.org.cecairbar.durvalcrm.infrastructure.persistence.entity;
 import br.org.cecairbar.durvalcrm.domain.model.Mensalidade;
 import br.org.cecairbar.durvalcrm.domain.model.StatusMensalidade;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
+import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -39,7 +40,7 @@ public class MensalidadeEntity extends PanacheEntityBase {
     public LocalDate dataVencimento;
 
     @Column(name = "data_pagamento")
-    public LocalDateTime dataPagamento;
+    public Instant dataPagamento;
 
     @Column(name = "qr_code_pix", length = 1000)
     public String qrCodePix;
@@ -47,8 +48,9 @@ public class MensalidadeEntity extends PanacheEntityBase {
     @Column(name = "identificador_pix", nullable = false, unique = true)
     public String identificadorPix;
 
-    @Column(name = "criado_em", nullable = false)
-    public LocalDateTime criadoEm;
+    @CreationTimestamp
+    @Column(name = "criado_em", nullable = false, updatable = false)
+    public Instant criadoEm;
 
     public static MensalidadeEntity fromDomain(Mensalidade mensalidade) {
         MensalidadeEntity entity = new MensalidadeEntity();
@@ -80,6 +82,7 @@ public class MensalidadeEntity extends PanacheEntityBase {
         if (this.dataPagamento != null) {
             mensalidade.marcarComoPaga(this.dataPagamento);
         }
+        mensalidade.setCriadoEm(this.criadoEm);
         return mensalidade;
     }
 }

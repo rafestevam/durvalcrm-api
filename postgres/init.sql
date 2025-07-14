@@ -9,30 +9,33 @@ CREATE TABLE usuarios (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
     senha_hash VARCHAR(255) NOT NULL,
-    criado_em TIMESTAMPTZ DEFAULT NOW()
+    criado_em TIMESTAMP DEFAULT NOW()
 );
 
 -- Tabela principal para os associados
 CREATE TABLE associados (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nome_completo VARCHAR(255) NOT NULL,
-    cpf VARCHAR(14) UNIQUE NOT NULL, -- Ex: 111.222.333-44 [cite: 18]
+    cpf VARCHAR(14) UNIQUE NOT NULL, -- Ex: 111.222.333-44
     email VARCHAR(255) UNIQUE NOT NULL,
-    telefone VARCHAR(20), -- Ex: (11) 99999-1111 [cite: 18]
+    telefone VARCHAR(20), -- Ex: (11) 99999-1111
     ativo BOOLEAN DEFAULT TRUE,
-    criado_em TIMESTAMPTZ DEFAULT NOW()
+    criado_em TIMESTAMP DEFAULT NOW()
 );
 
 -- Tabela para controlar as mensalidades geradas
 CREATE TABLE mensalidades (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     associado_id UUID NOT NULL REFERENCES associados(id),
-    mes_referencia INT NOT NULL, -- Ex: 7 para Julho
-    ano_referencia INT NOT NULL, -- Ex: 2025
-    valor NUMERIC(10, 2) NOT NULL, -- Ex: 10.90 [cite: 22]
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE', -- PENDENTE, PAGA [cite: 22, 23]
+    mes_referencia INT NOT NULL CHECK (mes_referencia >= 1 AND mes_referencia <= 12),
+    ano_referencia INT NOT NULL CHECK (ano_referencia >= 2020 AND ano_referencia <= 2030),
+    valor NUMERIC(10, 2) NOT NULL CHECK (valor > 0),
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDENTE',
     data_vencimento DATE NOT NULL,
-    data_pagamento DATE, -- Preenchida quando o status for 'PAGA' [cite: 22]
+    data_pagamento TIMESTAMP,
+    qr_code_pix TEXT,
+    identificador_pix VARCHAR(50) NOT NULL UNIQUE,
+    criado_em TIMESTAMP DEFAULT NOW(),
     UNIQUE(associado_id, mes_referencia, ano_referencia)
 );
 
@@ -44,14 +47,27 @@ CREATE TABLE pagamentos (
     valor_pago NUMERIC(10, 2) NOT NULL,
     metodo_pagamento VARCHAR(50), -- PIX, DINHEIRO, CARTAO
     origem_informacao VARCHAR(50) NOT NULL, -- MANUAL, EXTRATO_CSV, EXTRATO_OFX
-    descricao_extrato TEXT, -- Para armazenar a descrição original do extrato. Ex: PIX RECEBIDO DE CPF 999.888.777-66 [cite: 8]
-    reconciliado BOOLEAN DEFAULT FALSE
+    descricao_extrato TEXT, -- Para armazenar a descrição original do extrato
+    reconciliado BOOLEAN DEFAULT FALSE,
+    criado_em TIMESTAMP DEFAULT NOW()
 );
 
 -- Tabela para o registro de vendas avulsas (Cantina, Bazar, etc.)
 CREATE TABLE vendas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     valor NUMERIC(10, 2) NOT NULL,
-    origem VARCHAR(50) NOT NULL, -- CANTINA, BAZAR, LIVROS [cite: 2, 3]
-    data_venda TIMESTAMPTZ DEFAULT NOW()
+    origem VARCHAR(50) NOT NULL, -- CANTINA, BAZAR, LIVROS
+    data_venda TIMESTAMP DEFAULT NOW(),
+    criado_em TIMESTAMP DEFAULT NOW()
 );
+
+-- Índices para performance
+CREATE INDEX idx_mensalidades_periodo ON mensalidades(ano_referencia, mes_referencia);
+CREATE INDEX idx_mensalidades_associado ON mensalidades(associado_id);
+CREATE INDEX idx_mensalidades_status ON mensalidades(status);
+CREATE INDEX idx_mensalidades_vencimento ON mensalidades(data_vencimento);
+CREATE INDEX idx_mensalidades_identificador_pix ON mensalidades(identificador_pix);
+CREATE INDEX idx_pagamentos_mensalidade ON pagamentos(mensalidade_id);
+CREATE INDEX idx_pagamentos_data ON pagamentos(data_pagamento);
+CREATE INDEX idx_vendas_origem ON vendas(origem);
+CREATE INDEX idx_vendas_data ON vendas(data_venda);

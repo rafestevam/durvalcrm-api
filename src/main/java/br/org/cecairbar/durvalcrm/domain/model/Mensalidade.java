@@ -1,8 +1,8 @@
 package br.org.cecairbar.durvalcrm.domain.model;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class Mensalidade {
@@ -13,10 +13,10 @@ public class Mensalidade {
     private BigDecimal valor;
     private StatusMensalidade status;
     private LocalDate dataVencimento;
-    private LocalDateTime dataPagamento;
+    private Instant dataPagamento;
     private String qrCodePix;
     private String identificadorPix;
-    private LocalDateTime criadoEm;
+    private Instant criadoEm;
 
     // Construtor privado para controle da criação
     private Mensalidade() {}
@@ -32,7 +32,7 @@ public class Mensalidade {
         mensalidade.status = StatusMensalidade.PENDENTE;
         mensalidade.dataVencimento = calcularDataVencimento(mes, ano);
         mensalidade.identificadorPix = gerarIdentificadorPix(associadoId, mes, ano);
-        mensalidade.criadoEm = LocalDateTime.now();
+        mensalidade.criadoEm = Instant.now();
         return mensalidade;
     }
 
@@ -46,7 +46,7 @@ public class Mensalidade {
         return String.format("MENS%s%02d%d", shortId, mes, ano);
     }
 
-    public void marcarComoPaga(LocalDateTime dataPagamento) {
+    public void marcarComoPaga(Instant dataPagamento) {
         if (this.status == StatusMensalidade.PAGA) {
             throw new IllegalStateException("Mensalidade já está paga");
         }
@@ -77,13 +77,14 @@ public class Mensalidade {
     public BigDecimal getValor() { return valor; }
     public StatusMensalidade getStatus() { return status; }
     public LocalDate getDataVencimento() { return dataVencimento; }
-    public LocalDateTime getDataPagamento() { return dataPagamento; }
+    public Instant getDataPagamento() { return dataPagamento; }
     public String getQrCodePix() { return qrCodePix; }
     public String getIdentificadorPix() { return identificadorPix; }
-    public LocalDateTime getCriadoEm() { return criadoEm; }
+    public Instant getCriadoEm() { return criadoEm; }
 
-    // Setters necessários para persistência
+    // Setters (para uso interno e reconstrução)
     public void setId(UUID id) { this.id = id; }
     public void setQrCodePix(String qrCodePix) { this.qrCodePix = qrCodePix; }
+    public void setCriadoEm(Instant criadoEm) { this.criadoEm = criadoEm; }
     protected void setStatus(StatusMensalidade status) { this.status = status; }
 }
