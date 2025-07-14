@@ -41,6 +41,20 @@ public class AuthResource {
 
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
+    // Classe para requisição do callback com suporte PKCE
+    public static class CallbackRequest {
+        public String code;
+        public String redirectUri;
+        public String codeVerifier; // Novo campo para PKCE
+    }
+
+    // Classe para resposta de token
+    public static class TokenResponse {
+        public String accessToken;
+        public String refreshToken;
+        public Long expiresIn;
+    }
+
     /**
      * Endpoint público que retorna informações necessárias para o frontend
      * configurar a autenticação OIDC/Keycloak
@@ -62,13 +76,17 @@ public class AuthResource {
 
     /**
      * Endpoint para processar callback OAuth2 e trocar código por token
+     * Agora com suporte PKCE
      */
     @POST
     @Path("/callback")
     @PermitAll
     public Response handleCallback(CallbackRequest request) {
         try {
-            LOG.infof("Processando callback com código: %s", request.code != null ? "presente" : "ausente");
+            LOG.infof("Processando callback com código: %s, redirectUri: %s, PKCE: %s", 
+                    request.code != null ? request.code.substring(0, 10) + "..." : "ausente",
+                    request.redirectUri,
+                    request.codeVerifier != null ? "presente" : "ausente");
             
             if (request.code == null || request.code.trim().isEmpty()) {
                 return Response.status(Response.Status.BAD_REQUEST)
@@ -77,7 +95,7 @@ public class AuthResource {
             }
 
             // Trocar código por token no Keycloak
-            TokenResponse tokenResponse = exchangeCodeForToken(request.code, request.redirectUri);
+            TokenResponse tokenResponse = exchangeCodeForToken(request.code, request.redirectUri, request.codeVerifier);
             
             if (tokenResponse == null) {
                 return Response.status(Response.Status.UNAUTHORIZED)
@@ -112,16 +130,16 @@ public class AuthResource {
         try {
             LOG.infof("Retornando informações do usuário autenticado: %s", jwt.getName());
             
-            Map<String, Object> userDetails = new HashMap<>();
-            userDetails.put("username", jwt.getName());
-            userDetails.put("subject", jwt.getSubject());
-            userDetails.put("email", jwt.getClaim("email"));
-            userDetails.put("name", jwt.getClaim("name"));
-            userDetails.put("preferredUsername", jwt.getClaim("preferred_username"));
-            userDetails.put("tokenExpiry", jwt.getExpirationTime());
-            userDetails.put("issuedAt", jwt.getIssuedAtTime());
+            Map<String, Object> userInfo = new HashMap<>();
+            userInfo.put("sub", jwt.getSubject());
+            userInfo.put("preferred_username", jwt.getName());
+            userInfo.put("email", jwt.getClaim("email"));
+            userInfo.put("name", jwt.getClaim("name"));
+            userInfo.put("given_name", jwt.getClaim("given_name"));
+            userInfo.put("family_name", jwt.getClaim("family_name"));
             
-            return Response.ok(userDetails).build();
+            return Response.ok(userInfo).build();
+            
         } catch (Exception e) {
             LOG.errorf("Erro ao obter informações do usuário: %s", e.getMessage());
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
@@ -138,16 +156,12 @@ public class AuthResource {
     @Authenticated
     public Response validateToken() {
         try {
-            long currentTime = System.currentTimeMillis() / 1000;
-            boolean isValid = jwt.getExpirationTime() > currentTime;
+            LOG.infof("Validando token para usuário: %s", jwt.getName());
             
             Map<String, Object> validation = new HashMap<>();
-            validation.put("valid", isValid);
+            validation.put("valid", true);
             validation.put("username", jwt.getName());
-            validation.put("subject", jwt.getSubject());
-            validation.put("exp", jwt.getExpirationTime());
-            validation.put("currentTime", currentTime);
-            validation.put("timeToExpiry", jwt.getExpirationTime() - currentTime);
+            validation.put("expires_at", jwt.getExpirationTime());
             
             return Response.ok(validation).build();
         } catch (Exception e) {
@@ -192,8 +206,9 @@ public class AuthResource {
 
     /**
      * Troca código de autorização por token no Keycloak
+     * Agora com suporte PKCE
      */
-    private TokenResponse exchangeCodeForToken(String code, String redirectUri) {
+    private TokenResponse exchangeCodeForToken(String code, String redirectUri, String codeVerifier) {
         try {
             String tokenEndpoint = authServerUrl + "/protocol/openid-connect/token";
             
@@ -204,9 +219,16 @@ public class AuthResource {
             formData.put("code", code);
             formData.put("redirect_uri", redirectUri != null ? redirectUri : getDefaultRedirectUri());
             
-            // Adicionar client_secret se configurado
+            // Adicionar code_verifier se presente (PKCE)
+            if (codeVerifier != null && !codeVerifier.trim().isEmpty()) {
+                formData.put("code_verifier", codeVerifier);
+                LOG.infof("Incluindo code_verifier no request (PKCE): %s...", codeVerifier.substring(0, 8));
+            }
+            
+            // Adicionar client_secret se configurado (para clientes confidenciais)
             if (clientSecret != null && !clientSecret.trim().isEmpty()) {
                 formData.put("client_secret", clientSecret);
+                LOG.info("Incluindo client_secret no request");
             }
             
             // Converter para formato application/x-www-form-urlencoded
@@ -261,89 +283,71 @@ public class AuthResource {
             }
             if (jsonResponse.contains("\"expires_in\"")) {
                 String expiresInStr = extractJsonValue(jsonResponse, "expires_in");
-                response.expiresIn = Integer.parseInt(expiresInStr);
+                response.expiresIn = Long.parseLong(expiresInStr);
             }
             
             return response;
+            
         } catch (Exception e) {
-            LOG.errorf("Erro ao fazer parse da resposta do token: %s", e.getMessage());
+            LOG.errorf("Erro no parsing da resposta JSON: %s", e.getMessage());
             return null;
         }
     }
 
     /**
-     * Extrai valor de uma chave JSON (implementação simples)
+     * Extrai valor de uma chave JSON de forma simples
      */
     private String extractJsonValue(String json, String key) {
-        String searchKey = "\"" + key + "\":";
-        int startIndex = json.indexOf(searchKey);
-        if (startIndex == -1) return null;
-        
-        startIndex = startIndex + searchKey.length();
-        while (startIndex < json.length() && Character.isWhitespace(json.charAt(startIndex))) {
-            startIndex++;
+        String searchFor = "\"" + key + "\":\"";
+        int start = json.indexOf(searchFor);
+        if (start == -1) {
+            // Tentar sem aspas para números
+            searchFor = "\"" + key + "\":";
+            start = json.indexOf(searchFor);
+            if (start == -1) return null;
+            start += searchFor.length();
+            int end = json.indexOf(",", start);
+            if (end == -1) end = json.indexOf("}", start);
+            return json.substring(start, end).trim();
         }
         
-        if (startIndex >= json.length()) return null;
-        
-        char firstChar = json.charAt(startIndex);
-        int endIndex;
-        
-        if (firstChar == '"') {
-            // String value
-            startIndex++; // Skip opening quote
-            endIndex = json.indexOf('"', startIndex);
-        } else {
-            // Number value
-            endIndex = startIndex;
-            while (endIndex < json.length() && 
-                   (Character.isDigit(json.charAt(endIndex)) || json.charAt(endIndex) == '.')) {
-                endIndex++;
-            }
-        }
-        
-        return endIndex > startIndex ? json.substring(startIndex, endIndex) : null;
+        start += searchFor.length();
+        int end = json.indexOf("\"", start);
+        return json.substring(start, end);
     }
 
-    private String extractRealmFromUrl(String url) {
-        if (url == null || url.isEmpty()) {
+    /**
+     * Extrai o realm da URL do auth server
+     */
+    private String extractRealmFromUrl(String authServerUrl) {
+        try {
+            // Formato esperado: http://localhost:8080/realms/durval-crm
+            String[] parts = authServerUrl.split("/realms/");
+            return parts.length > 1 ? parts[1] : "durval-crm";
+        } catch (Exception e) {
+            LOG.warn("Erro ao extrair realm da URL, usando default");
             return "durval-crm";
         }
-        
-        String[] parts = url.split("/realms/");
-        if (parts.length > 1) {
-            return parts[1];
-        }
-        
-        return "durval-crm";
     }
 
+    /**
+     * Constrói URL de login
+     */
+    private String buildLoginUrl() {
+        return authServerUrl + "/protocol/openid-connect/auth";
+    }
+
+    /**
+     * Constrói URL de logout
+     */
     private String buildLogoutUrl() {
         return authServerUrl + "/protocol/openid-connect/logout";
     }
 
-    private String buildLoginUrl() {
-        return authServerUrl + "/protocol/openid-connect/auth" +
-               "?client_id=" + clientId +
-               "&response_type=code" +
-               "&scope=openid%20profile%20email" +
-               "&redirect_uri=" + getDefaultRedirectUri();
-    }
-
+    /**
+     * Retorna URI de redirecionamento padrão
+     */
     private String getDefaultRedirectUri() {
-        return "http://localhost:3000/auth/callback";
-    }
-
-    // Classes auxiliares
-    public static class CallbackRequest {
-        public String code;
-        public String redirectUri;
-        public String state;
-    }
-
-    private static class TokenResponse {
-        public String accessToken;
-        public String refreshToken;
-        public int expiresIn;
+        return "http://localhost:5173/auth/callback";
     }
 }
