@@ -6,7 +6,7 @@ import br.org.cecairbar.durvalcrm.domain.repository.MensalidadeRepository;
 import br.org.cecairbar.durvalcrm.application.service.PixService;
 import br.org.cecairbar.durvalcrm.application.dto.ResultadoGeracaoDTO;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.InjectMock;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,8 +55,8 @@ class GerarCobrancasMensaisUseCaseTest {
         when(associadoRepository.findByAtivo(true))
             .thenReturn(Arrays.asList(associado1, associado2));
         
-        // Mock não existir mensalidades
-        when(mensalidadeRepository.existsByAssociadoEPeriodo(any(), anyInt(), anyInt()))
+        // Mock não existir mensalidades - CORRIGIDO: usar associado.getId() ao invés de associado
+        when(mensalidadeRepository.existsByAssociadoEPeriodo(any(UUID.class), anyInt(), anyInt()))
             .thenReturn(false);
         
         // Mock PIX service
@@ -78,8 +78,8 @@ class GerarCobrancasMensaisUseCaseTest {
         // Verifica se foram consultados os associados ativos
         verify(associadoRepository, times(1)).findByAtivo(true);
         
-        // Verifica se foi checado se já existiam mensalidades
-        verify(mensalidadeRepository, times(2)).existsByAssociadoEPeriodo(any(), eq(7), eq(2025));
+        // Verifica se foi checado se já existiam mensalidades - CORRIGIDO: usar any(UUID.class)
+        verify(mensalidadeRepository, times(2)).existsByAssociadoEPeriodo(any(UUID.class), eq(7), eq(2025));
         
         // Verifica se QR Code foi gerado para cada cobrança
         verify(pixService, times(2)).gerarQRCode(any(), any(), any());
@@ -121,10 +121,10 @@ class GerarCobrancasMensaisUseCaseTest {
         when(associadoRepository.findByAtivo(true))
             .thenReturn(Arrays.asList(associado1, associado2));
         
-        // Mock que primeira mensalidade já existe, segunda não
-        when(mensalidadeRepository.existsByAssociadoEPeriodo(associado1, 7, 2025))
+        // Mock que primeira mensalidade já existe, segunda não - CORRIGIDO: usar associado.getId()
+        when(mensalidadeRepository.existsByAssociadoEPeriodo(associado1.getId(), 7, 2025))
             .thenReturn(true);
-        when(mensalidadeRepository.existsByAssociadoEPeriodo(associado2, 7, 2025))
+        when(mensalidadeRepository.existsByAssociadoEPeriodo(associado2.getId(), 7, 2025))
             .thenReturn(false);
         
         // Mock PIX service
