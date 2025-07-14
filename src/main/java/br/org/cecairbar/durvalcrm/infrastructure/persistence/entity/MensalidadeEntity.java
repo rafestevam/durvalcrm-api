@@ -85,4 +85,20 @@ public class MensalidadeEntity extends PanacheEntityBase {
         mensalidade.setCriadoEm(this.criadoEm);
         return mensalidade;
     }
+
+    /**
+     * Updates the entity from a domain object
+     * This method should be added to your MensalidadeEntity class
+     */
+    public void updateFromDomain(Mensalidade mensalidade) {
+        this.associadoId = mensalidade.getAssociadoId();
+        this.mesReferencia = mensalidade.getMesReferencia();
+        this.anoReferencia = mensalidade.getAnoReferencia();
+        this.valor = mensalidade.getValor();
+        this.dataVencimento = mensalidade.getDataVencimento();
+        this.dataPagamento = mensalidade.getDataPagamento();
+        this.status = mensalidade.getStatus();
+        this.identificadorPix = mensalidade.getIdentificadorPix();
+        this.qrCodePix = mensalidade.getQrCodePix();
+}
 }

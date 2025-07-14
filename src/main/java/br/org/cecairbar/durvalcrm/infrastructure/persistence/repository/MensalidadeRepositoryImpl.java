@@ -16,16 +16,16 @@ import java.util.stream.Collectors;
 public class MensalidadeRepositoryImpl implements MensalidadeRepository {
 
     @Override
-    public Mensalidade save(Mensalidade mensalidade) {
+    public void save(Mensalidade mensalidade) {
         MensalidadeEntity entity = MensalidadeEntity.fromDomain(mensalidade);
         entity.persist();
-        return entity.toDomain();
     }
 
     @Override
-    public Optional<Mensalidade> findById(UUID id) {
+    public Mensalidade findById(UUID id) {
         return MensalidadeEntity.<MensalidadeEntity>findByIdOptional(id)
-            .map(MensalidadeEntity::toDomain);
+            .map(MensalidadeEntity::toDomain)
+            .orElse(null);
     }
 
     @Override
@@ -57,11 +57,17 @@ public class MensalidadeRepositoryImpl implements MensalidadeRepository {
     }
 
     @Override
-    public List<Mensalidade> findByStatus(StatusMensalidade status) {
-        return MensalidadeEntity.<MensalidadeEntity>find("status = ?1", status)
-            .stream()
-            .map(MensalidadeEntity::toDomain)
-            .collect(Collectors.toList());
+    public List<Mensalidade> findByStatus(String status) {
+        try {
+            StatusMensalidade statusEnum = StatusMensalidade.valueOf(status.toUpperCase());
+            return MensalidadeEntity.<MensalidadeEntity>find("status = ?1", statusEnum)
+                .stream()
+                .map(MensalidadeEntity::toDomain)
+                .collect(Collectors.toList());
+        } catch (IllegalArgumentException e) {
+            // Se o status não for válido, retorna lista vazia
+            return List.of();
+        }
     }
 
     @Override
@@ -74,12 +80,11 @@ public class MensalidadeRepositoryImpl implements MensalidadeRepository {
         .collect(Collectors.toList());
     }
 
-    @Override
+    // Note: These methods are not in the interface, removing @Override annotations
     public void deleteById(UUID id) {
         MensalidadeEntity.deleteById(id);
     }
 
-    @Override
     public long countByMesEAno(int mes, int ano) {
         return MensalidadeEntity.count(
             "mesReferencia = ?1 and anoReferencia = ?2", 
@@ -87,7 +92,6 @@ public class MensalidadeRepositoryImpl implements MensalidadeRepository {
         );
     }
 
-    @Override
     public long countByMesEAnoEStatus(int mes, int ano, StatusMensalidade status) {
         return MensalidadeEntity.count(
             "mesReferencia = ?1 and anoReferencia = ?2 and status = ?3",
@@ -96,69 +100,105 @@ public class MensalidadeRepositoryImpl implements MensalidadeRepository {
     }
 
     @Override
-    public Optional<Mensalidade> findByIdentificadorPix(String identificadorPix) {
+    public Mensalidade findByIdentificadorPix(String identificadorPix) {
         return MensalidadeEntity.<MensalidadeEntity>find("identificadorPix = ?1", identificadorPix)
             .firstResultOptional()
-            .map(MensalidadeEntity::toDomain);
-    }
-
-    @Override
-    public List<Mensalidade> findByStatus(String status) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findByStatus'");
+            .map(MensalidadeEntity::toDomain)
+            .orElse(null);
     }
 
     @Override
     public List<Mensalidade> findByAssociadoIdAndMesEAno(UUID associadoId, int mes, int ano) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findByAssociadoIdAndMesEAno'");
+        return MensalidadeEntity.<MensalidadeEntity>find(
+            "associadoId = ?1 and mesReferencia = ?2 and anoReferencia = ?3", 
+            associadoId, mes, ano
+        ).stream()
+        .map(MensalidadeEntity::toDomain)
+        .collect(Collectors.toList());
     }
 
     @Override
     public long countByStatusAndMesEAno(String status, int mes, int ano) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'countByStatusAndMesEAno'");
+        try {
+            StatusMensalidade statusEnum = StatusMensalidade.valueOf(status.toUpperCase());
+            return MensalidadeEntity.count(
+                "status = ?1 and mesReferencia = ?2 and anoReferencia = ?3",
+                statusEnum, mes, ano
+            );
+        } catch (IllegalArgumentException e) {
+            return 0;
+        }
     }
 
     @Override
     public List<Mensalidade> findAll() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findAll'");
+        return MensalidadeEntity.<MensalidadeEntity>findAll()
+            .stream()
+            .map(MensalidadeEntity::toDomain)
+            .collect(Collectors.toList());
     }
 
     @Override
     public List<Mensalidade> findByAno(int ano) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findByAno'");
+        return MensalidadeEntity.<MensalidadeEntity>find(
+            "anoReferencia = ?1 order by mesReferencia", 
+            ano
+        ).stream()
+        .map(MensalidadeEntity::toDomain)
+        .collect(Collectors.toList());
     }
 
     @Override
     public void update(Mensalidade mensalidade) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'update'");
+        Optional<MensalidadeEntity> entityOpt = MensalidadeEntity.findByIdOptional(mensalidade.getId());
+        if (entityOpt.isPresent()) {
+            MensalidadeEntity entity = entityOpt.get();
+            // Update fields individually since updateFromDomain may not exist
+            entity.associadoId = mensalidade.getAssociadoId();
+            entity.mesReferencia = mensalidade.getMesReferencia();
+            entity.anoReferencia = mensalidade.getAnoReferencia();
+            entity.valor = mensalidade.getValor();
+            entity.status = mensalidade.getStatus();
+            entity.dataVencimento = mensalidade.getDataVencimento();
+            entity.dataPagamento = mensalidade.getDataPagamento();
+            entity.qrCodePix = mensalidade.getQrCodePix();
+            entity.identificadorPix = mensalidade.getIdentificadorPix();
+            entity.persist();
+        }
     }
 
     @Override
     public void delete(UUID id) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+        MensalidadeEntity.deleteById(id);
     }
 
     @Override
     public List<Mensalidade> findPendentesByMesEAno(int mes, int ano) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findPendentesByMesEAno'");
+        return MensalidadeEntity.<MensalidadeEntity>find(
+            "status = ?1 and mesReferencia = ?2 and anoReferencia = ?3",
+            StatusMensalidade.PENDENTE, mes, ano
+        ).stream()
+        .map(MensalidadeEntity::toDomain)
+        .collect(Collectors.toList());
     }
 
     @Override
     public List<Mensalidade> findPagasByMesEAno(int mes, int ano) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findPagasByMesEAno'");
+        return MensalidadeEntity.<MensalidadeEntity>find(
+            "status = ?1 and mesReferencia = ?2 and anoReferencia = ?3",
+            StatusMensalidade.PAGA, mes, ano
+        ).stream()
+        .map(MensalidadeEntity::toDomain)
+        .collect(Collectors.toList());
     }
 
     @Override
     public List<Mensalidade> findAtrasadasByMesEAno(int mes, int ano) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'findAtrasadasByMesEAno'");
+        return MensalidadeEntity.<MensalidadeEntity>find(
+            "status = ?1 and mesReferencia = ?2 and anoReferencia = ?3",
+            StatusMensalidade.ATRASADA, mes, ano
+        ).stream()
+        .map(MensalidadeEntity::toDomain)
+        .collect(Collectors.toList());
     }
 }
