@@ -60,16 +60,31 @@ public class AssociadoUseCaseImpl implements AssociadoUseCase {
     @Override
     public AssociadoDTO update(UUID id, AssociadoDTO associadoDTO) {
         return associadoRepository.findById(id)
-            .map(existingAssociado -> {
-                // Atualiza os campos do associado existente
-                existingAssociado.setNomeCompleto(associadoDTO.getNomeCompleto());
-                existingAssociado.setTelefone(associadoDTO.getTelefone());
-                // Nota: CPF e email geralmente não devem ser alterados após criação
-                
-                Associado updatedAssociado = associadoRepository.save(existingAssociado);
-                return mapper.toDTO(updatedAssociado);
-            })
-            .orElseThrow(() -> new NotFoundException("Associado não encontrado"));
+        .map(existingAssociado -> {
+            // Atualiza os campos do associado existente
+            existingAssociado.setNomeCompleto(associadoDTO.getNomeCompleto());
+            existingAssociado.setTelefone(associadoDTO.getTelefone());
+            
+            // Permite atualização de email se fornecido
+            if (associadoDTO.getEmail() != null && !associadoDTO.getEmail().isEmpty()) {
+                // Verifica se o novo email já existe em outro registro
+                associadoRepository.findByEmail(associadoDTO.getEmail())
+                    .ifPresent(existingWithEmail -> {
+                        // Se o email já existe em outro associado (não o atual), lança exceção
+                        if (!existingWithEmail.getId().equals(id)) {
+                            throw new WebApplicationException("E-mail já cadastrado", Response.Status.CONFLICT);
+                        }
+                    });
+                existingAssociado.setEmail(associadoDTO.getEmail());
+            }
+            
+            // CPF geralmente não deve ser alterado após criação
+            // Mas se necessário, pode ser adicionado aqui com validação similar
+            
+            Associado updatedAssociado = associadoRepository.save(existingAssociado);
+            return mapper.toDTO(updatedAssociado);
+        })
+        .orElseThrow(() -> new NotFoundException("Associado não encontrado"));
     }
 
     @Override
