@@ -175,6 +175,22 @@ public class AuthResource {
     }
 
     /**
+     * Endpoint para logout via POST
+     */
+    @POST
+    @Path("/logout")
+    @PermitAll
+    public Map<String, String> logoutPost() {
+        LOG.info("Endpoint de logout POST acessado");
+        
+        Map<String, String> response = new HashMap<>();
+        response.put("message", "Logout realizado com sucesso");
+        response.put("logoutUrl", buildLogoutUrl());
+        
+        return response;
+    }
+
+    /**
      * Troca código de autorização por token no Keycloak
      */
     private TokenResponse exchangeCodeForToken(String code, String redirectUri) {
