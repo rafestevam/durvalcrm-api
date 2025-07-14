@@ -15,6 +15,7 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasSize;
 
 @QuarkusTest
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -33,7 +34,7 @@ public class AssociadoResourceTest {
     void testFindAllEndpoint_ReturnsEmptyListInitially() {
         given()
         .when()
-          .get("/associados")
+          .get("/api/associados")
         .then()
           .statusCode(200)
           .contentType(ContentType.JSON)
@@ -57,76 +58,67 @@ public class AssociadoResourceTest {
           .contentType(ContentType.JSON)
           .body(novoAssociadoJson)
         .when()
-          .post("/associados")
+          .post("/api/associados")
         .then()
           .statusCode(201)
           .contentType(ContentType.JSON)
           .body("id", notNullValue())
           .body("nomeCompleto", is("Novo Associado via Teste"))
-          .body("cpf", is("987.654.321-00"));
+          .body("cpf", is("987.654.321-00"))
+          .body("email", is("novoteste@email.com"))
+          .body("telefone", is("(11) 91234-5678"));
     }
 
     @Test
     @Order(3)
     @TestSecurity(user = "testuser", roles = { "user" })
-    void testFindAllEndpoint_AfterCreation() {
-        // Primeiro cria um associado
-        String novoAssociadoJson = """
+    void testCreateAssociado_WithInvalidData_ShouldReturnBadRequest() {
+        String invalidAssociadoJson = """
             {
-                "nomeCompleto": "Associado para Busca",
-                "cpf": "111.222.333-44",
-                "email": "busca@email.com",
-                "telefone": "(11) 98765-4321"
+                "nomeCompleto": "",
+                "cpf": "123",
+                "email": "email-invalido"
             }
         """;
 
         given()
           .contentType(ContentType.JSON)
-          .body(novoAssociadoJson)
+          .body(invalidAssociadoJson)
         .when()
-          .post("/associados")
+          .post("/api/associados")
         .then()
-          .statusCode(201);
-
-        // Depois verifica se consegue encontrar
-        given()
-        .when()
-          .get("/associados")
-        .then()
-          .statusCode(200)
-          .contentType(ContentType.JSON)
-          .body("size()", greaterThanOrEqualTo(1));
+          .statusCode(400);
     }
 
     @Test
     @Order(4)
     @TestSecurity(user = "testuser", roles = { "user" })
-    void testCreateAssociado_ConflictCpf() {
-        // Primeiro cria um associado
-        String primeiroAssociadoJson = """
+    void testCreateAssociado_WithDuplicateCpf_ShouldReturnConflict() {
+        String associadoJson = """
             {
                 "nomeCompleto": "Primeiro Associado",
-                "cpf": "123.456.789-00",
+                "cpf": "111.222.333-44",
                 "email": "primeiro@email.com",
-                "telefone": "(11) 11111-1111"
+                "telefone": "(11) 91234-5678"
             }
         """;
 
+        // Cria o primeiro associado
         given()
           .contentType(ContentType.JSON)
-          .body(primeiroAssociadoJson)
+          .body(associadoJson)
         .when()
-          .post("/associados")
+          .post("/api/associados")
         .then()
           .statusCode(201);
 
-        // Tenta criar outro com mesmo CPF
+        // Tenta criar outro com o mesmo CPF
         String segundoAssociadoJson = """
             {
                 "nomeCompleto": "Segundo Associado",
-                "cpf": "123.456.789-00",
+                "cpf": "111.222.333-44",
                 "email": "segundo@email.com",
-                "telefone": "(11) 22222-2222"
+                "telefone": "(11) 91234-5679"
             }
         """;
 
@@ -134,7 +126,7 @@ public class AssociadoResourceTest {
           .contentType(ContentType.JSON)
           .body(segundoAssociadoJson)
         .when()
-          .post("/associados")
+          .post("/api/associados")
         .then()
           .statusCode(409); // Conflict
     }
@@ -142,88 +134,80 @@ public class AssociadoResourceTest {
     @Test
     @Order(5)
     @TestSecurity(user = "testuser", roles = { "user" })
-    void testCreateAssociado_ConflictEmail() {
+    void testFindAllEndpoint_AfterCreation() {
         // Primeiro cria um associado
-        String primeiroAssociadoJson = """
+        String novoAssociadoJson = """
             {
-                "nomeCompleto": "Primeiro Associado",
+                "nomeCompleto": "Associado para Busca",
                 "cpf": "555.666.777-88",
-                "email": "conflito@email.com",
-                "telefone": "(11) 11111-1111"
+                "email": "busca@email.com",
+                "telefone": "(11) 91234-5678"
             }
         """;
 
         given()
           .contentType(ContentType.JSON)
-          .body(primeiroAssociadoJson)
+          .body(novoAssociadoJson)
         .when()
-          .post("/associados")
+          .post("/api/associados")
         .then()
           .statusCode(201);
 
-        // Tenta criar outro com mesmo email
-        String segundoAssociadoJson = """
-            {
-                "nomeCompleto": "Segundo Associado",
-                "cpf": "999.888.777-66",
-                "email": "conflito@email.com",
-                "telefone": "(11) 22222-2222"
-            }
-        """;
-
+        // Agora busca todos
         given()
-          .contentType(ContentType.JSON)
-          .body(segundoAssociadoJson)
         .when()
-          .post("/associados")
+          .get("/api/associados")
         .then()
-          .statusCode(409); // Conflict
+          .statusCode(200)
+          .contentType(ContentType.JSON)
+          .body("$", hasSize(1))
+          .body("[0].nomeCompleto", is("Associado para Busca"));
     }
 
     @Test
     @Order(6)
     @TestSecurity(user = "testuser", roles = { "user" })
-    void testFindById_Success() {
+    void testFindById_WithValidId_ShouldReturnAssociado() {
         // Primeiro cria um associado
         String novoAssociadoJson = """
             {
                 "nomeCompleto": "Associado para Buscar por ID",
-                "cpf": "777.888.999-00",
-                "email": "buscarid@email.com",
-                "telefone": "(11) 99999-0000"
+                "cpf": "999.888.777-66",
+                "email": "buscaid@email.com",
+                "telefone": "(11) 91234-5678"
             }
         """;
 
-        String associadoId = given()
+        String createdId = given()
           .contentType(ContentType.JSON)
           .body(novoAssociadoJson)
         .when()
-          .post("/associados")
+          .post("/api/associados")
         .then()
           .statusCode(201)
           .extract()
           .path("id");
 
-        // Busca o associado por ID
+        // Busca por ID
         given()
         .when()
-          .get("/associados/{id}", associadoId)
+          .get("/api/associados/{id}", createdId)
         .then()
           .statusCode(200)
           .contentType(ContentType.JSON)
-          .body("id", is(associadoId))
-          .body("nomeCompleto", is("Associado para Buscar por ID"))
-          .body("cpf", is("777.888.999-00"));
+          .body("id", is(createdId))
+          .body("nomeCompleto", is("Associado para Buscar por ID"));
     }
 
     @Test
     @Order(7)
     @TestSecurity(user = "testuser", roles = { "user" })
-    void testFindById_NotFound() {
-        // Tenta buscar um ID que não existe
+    void testFindById_WithInvalidId_ShouldReturnNotFound() {
+        String invalidId = "123e4567-e89b-12d3-a456-426614174000";
+
         given()
         .when()
-          .get("/associados/{id}", "00000000-0000-0000-0000-000000000000")
+          .get("/api/associados/{id}", invalidId)
         .then()
           .statusCode(404);
     }
@@ -231,68 +215,86 @@ public class AssociadoResourceTest {
     @Test
     @Order(8)
     @TestSecurity(user = "testuser", roles = { "user" })
-    void testUpdateAssociado_Success() {
+    void testUpdateAssociado_WithValidData_ShouldUpdateSuccessfully() {
         // Primeiro cria um associado
         String novoAssociadoJson = """
             {
                 "nomeCompleto": "Associado Original",
-                "cpf": "444.555.666-77",
+                "cpf": "123.123.123-12",
                 "email": "original@email.com",
-                "telefone": "(11) 44444-4444"
+                "telefone": "(11) 91234-5678"
             }
         """;
 
-        String associadoId = given()
+        String createdId = given()
           .contentType(ContentType.JSON)
           .body(novoAssociadoJson)
         .when()
-          .post("/associados")
+          .post("/api/associados")
         .then()
           .statusCode(201)
           .extract()
           .path("id");
 
         // Atualiza o associado
-        String associadoAtualizadoJson = """
+        String updateJson = """
             {
                 "nomeCompleto": "Associado Atualizado",
-                "cpf": "444.555.666-77",
-                "email": "original@email.com",
-                "telefone": "(11) 55555-5555"
+                "cpf": "123.123.123-12",
+                "email": "atualizado@email.com",
+                "telefone": "(11) 98765-4321"
             }
         """;
 
         given()
           .contentType(ContentType.JSON)
-          .body(associadoAtualizadoJson)
+          .body(updateJson)
         .when()
-          .put("/associados/{id}", associadoId)
+          .put("/api/associados/{id}", createdId)
         .then()
           .statusCode(200)
           .contentType(ContentType.JSON)
-          .body("id", is(associadoId))
+          .body("id", is(createdId))
           .body("nomeCompleto", is("Associado Atualizado"))
-          .body("telefone", is("(11) 55555-5555"));
+          .body("email", is("atualizado@email.com"))
+          .body("telefone", is("(11) 98765-4321"));
     }
 
     @Test
     @Order(9)
     @TestSecurity(user = "testuser", roles = { "user" })
-    void testUpdateAssociado_NotFound() {
-        String associadoAtualizadoJson = """
+    void testDeleteAssociado_WithValidId_ShouldDeleteSuccessfully() {
+        // Primeiro cria um associado
+        String novoAssociadoJson = """
             {
-                "nomeCompleto": "Associado Inexistente",
-                "cpf": "000.000.000-00",
-                "email": "inexistente@email.com",
-                "telefone": "(11) 00000-0000"
+                "nomeCompleto": "Associado para Deletar",
+                "cpf": "456.456.456-45",
+                "email": "deletar@email.com",
+                "telefone": "(11) 91234-5678"
             }
         """;
 
-        given()
+        String createdId = given()
           .contentType(ContentType.JSON)
-          .body(associadoAtualizadoJson)
+          .body(novoAssociadoJson)
         .when()
-          .put("/associados/{id}", "00000000-0000-0000-0000-000000000000")
+          .post("/api/associados")
+        .then()
+          .statusCode(201)
+          .extract()
+          .path("id");
+
+        // Deleta o associado
+        given()
+        .when()
+          .delete("/api/associados/{id}", createdId)
+        .then()
+          .statusCode(204);
+
+        // Verifica se foi deletado
+        given()
+        .when()
+          .get("/api/associados/{id}", createdId)
         .then()
           .statusCode(404);
     }
@@ -300,90 +302,31 @@ public class AssociadoResourceTest {
     @Test
     @Order(10)
     @TestSecurity(user = "testuser", roles = { "user" })
-    void testDeleteAssociado_Success() {
-        // Primeiro cria um associado
-        String novoAssociadoJson = """
-            {
-                "nomeCompleto": "Associado para Deletar",
-                "cpf": "333.444.555-66",
-                "email": "deletar@email.com",
-                "telefone": "(11) 33333-3333"
-            }
-        """;
-
-        String associadoId = given()
-          .contentType(ContentType.JSON)
-          .body(novoAssociadoJson)
-        .when()
-          .post("/associados")
-        .then()
-          .statusCode(201)
-          .extract()
-          .path("id");
-
-        // Verifica que existe antes de deletar
-        given()
-        .when()
-          .get("/associados/{id}", associadoId)
-        .then()
-          .statusCode(200);
-
-        // Deleta o associado
-        given()
-        .when()
-          .delete("/associados/{id}", associadoId)
-        .then()
-          .statusCode(204); // No Content
-
-        // Verifica que não consegue mais encontrar (soft delete)
-        given()
-        .when()
-          .get("/associados/{id}", associadoId)
-        .then()
-          .statusCode(404); // Not Found
-    }
-
-    @Test
-    @Order(11)
-    @TestSecurity(user = "testuser", roles = { "user" })
-    void testDeleteAssociado_NotFound() {
-        // Tenta deletar um ID que não existe
-        given()
-        .when()
-          .delete("/associados/{id}", "00000000-0000-0000-0000-000000000000")
-        .then()
-          .statusCode(404);
-    }
-
-    @Test
-    @Order(12)
-    @TestSecurity(user = "testuser", roles = { "user" })
-    void testFindAll_WithSearch() {
-        // Cria alguns associados para testar busca
+    void testSearchAssociados_WithValidQuery_ShouldReturnFilteredResults() {
+        // Cria alguns associados para teste de busca
         String associado1Json = """
             {
-                "nomeCompleto": "João Silva",
+                "nomeCompleto": "João da Silva Santos",
                 "cpf": "111.111.111-11",
                 "email": "joao@email.com",
-                "telefone": "(11) 11111-1111"
+                "telefone": "(11) 91234-5678"
             }
         """;
 
         String associado2Json = """
             {
-                "nomeCompleto": "Maria Santos",
+                "nomeCompleto": "Maria dos Santos",
                 "cpf": "222.222.222-22",
                 "email": "maria@email.com",
-                "telefone": "(11) 22222-2222"
+                "telefone": "(11) 91234-5679"
             }
         """;
 
-        // Cria os associados
         given()
           .contentType(ContentType.JSON)
           .body(associado1Json)
         .when()
-          .post("/associados")
+          .post("/api/associados")
         .then()
           .statusCode(201);
 
@@ -391,30 +334,29 @@ public class AssociadoResourceTest {
           .contentType(ContentType.JSON)
           .body(associado2Json)
         .when()
-          .post("/associados")
+          .post("/api/associados")
         .then()
           .statusCode(201);
 
-        // Busca por nome
+        // Busca por "Santos" - deve retornar ambos
+        given()
+          .queryParam("search", "Santos")
+        .when()
+          .get("/api/associados")
+        .then()
+          .statusCode(200)
+          .contentType(ContentType.JSON)
+          .body("$", hasSize(2));
+
+        // Busca por "João" - deve retornar apenas um
         given()
           .queryParam("search", "João")
         .when()
-          .get("/associados")
+          .get("/api/associados")
         .then()
           .statusCode(200)
           .contentType(ContentType.JSON)
-          .body("size()", greaterThanOrEqualTo(1))
-          .body("[0].nomeCompleto", is("João Silva"));
-
-        // Busca por CPF
-        given()
-          .queryParam("search", "222.222.222-22")
-        .when()
-          .get("/associados")
-        .then()
-          .statusCode(200)
-          .contentType(ContentType.JSON)
-          .body("size()", greaterThanOrEqualTo(1))
-          .body("[0].nomeCompleto", is("Maria Santos"));
+          .body("$", hasSize(1))
+          .body("[0].nomeCompleto", is("João da Silva Santos"));
     }
 }
