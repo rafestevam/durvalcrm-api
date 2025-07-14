@@ -139,6 +139,80 @@ public class ResumoMensalidadesDTO {
             0.0, mes, ano);
     }
 
+    /**
+     * Método estático para criar ResumoMensalidadesDTO com total de associados específico
+     */
+    public static ResumoMensalidadesDTO criarDoListComTotalAssociados(
+        List<Mensalidade> mensalidades, 
+        int totalAssociadosAtivos) {
+        
+        if (mensalidades == null || mensalidades.isEmpty()) {
+            return new ResumoMensalidadesDTO(
+                totalAssociadosAtivos, 0, 0, 0, 
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, 
+                0.0, 0, 0
+            );
+        }
+
+        // Obter mês e ano da primeira mensalidade
+        Mensalidade primeira = mensalidades.get(0);
+        int mes = primeira.getMesReferencia();
+        int ano = primeira.getAnoReferencia();
+
+        // Contadores (mantém mensalidades.size() para mensalidades geradas)
+        int totalPendentes = 0;
+        int totalPagas = 0;
+        int totalAtrasadas = 0;
+
+        // Valores
+        BigDecimal valorTotalEsperado = BigDecimal.valueOf(totalAssociadosAtivos).multiply(new BigDecimal("10.90"));
+        BigDecimal valorArrecadado = BigDecimal.ZERO;
+        BigDecimal valorPendente = BigDecimal.ZERO;
+        BigDecimal valorAtrasado = BigDecimal.ZERO;
+
+        // Processar cada mensalidade
+        for (Mensalidade mensalidade : mensalidades) {
+            switch (mensalidade.getStatus()) {
+                case PENDENTE:
+                    totalPendentes++;
+                    valorPendente = valorPendente.add(mensalidade.getValor());
+                    break;
+                case PAGA:
+                    totalPagas++;
+                    valorArrecadado = valorArrecadado.add(mensalidade.getValor());
+                    break;
+                case ATRASADA:
+                    totalAtrasadas++;
+                    valorAtrasado = valorAtrasado.add(mensalidade.getValor());
+                    break;
+            }
+        }
+
+        // Calcular pendentes para associados sem mensalidades geradas
+        int associadosSemMensalidade = totalAssociadosAtivos - mensalidades.size();
+        if (associadosSemMensalidade > 0) {
+            totalPendentes += associadosSemMensalidade;
+            valorPendente = valorPendente.add(
+                BigDecimal.valueOf(associadosSemMensalidade).multiply(new BigDecimal("10.90"))
+            );
+        }
+
+        // Calcular percentual de arrecadação
+        double percentualArrecadacao = 0.0;
+        if (valorTotalEsperado.compareTo(BigDecimal.ZERO) > 0) {
+            percentualArrecadacao = valorArrecadado
+                .divide(valorTotalEsperado, 4, BigDecimal.ROUND_HALF_UP)
+                .multiply(BigDecimal.valueOf(100))
+                .doubleValue();
+        }
+
+        return new ResumoMensalidadesDTO(
+            totalAssociadosAtivos, totalPendentes, totalPagas, totalAtrasadas,
+            valorTotalEsperado, valorArrecadado, valorPendente, valorAtrasado,
+            percentualArrecadacao, mes, ano
+        );
+    }
+
     // Getters e Setters
     public int getTotalAssociados() { return totalAssociados; }
     public void setTotalAssociados(int totalAssociados) { this.totalAssociados = totalAssociados; }

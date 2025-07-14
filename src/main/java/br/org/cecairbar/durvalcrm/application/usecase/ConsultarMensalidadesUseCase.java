@@ -1,5 +1,6 @@
 package br.org.cecairbar.durvalcrm.application.usecase;
 
+import br.org.cecairbar.durvalcrm.domain.repository.AssociadoRepository;
 import br.org.cecairbar.durvalcrm.domain.repository.MensalidadeRepository;
 import br.org.cecairbar.durvalcrm.application.dto.MensalidadeDTO;
 import br.org.cecairbar.durvalcrm.application.dto.ResumoMensalidadesDTO;
@@ -17,13 +18,20 @@ public class ConsultarMensalidadesUseCase {
     @Inject
     MensalidadeRepository mensalidadeRepository;
 
+    @Inject
+    AssociadoRepository associadoRepository;
+
     /**
      * Obtém resumo das mensalidades por período
      */
     public ResumoMensalidadesDTO obterResumo(int mes, int ano) {
         var mensalidades = mensalidadeRepository.findByMesEAno(mes, ano);
+        var associadosAtivos = associadoRepository.findByAtivo(true); // ADICIONAR
         
-        return ResumoMensalidadesDTO.criarDoList(mensalidades);
+        return ResumoMensalidadesDTO.criarDoListComTotalAssociados(
+            mensalidades, 
+            associadosAtivos.size() // USAR TOTAL DE ASSOCIADOS ATIVOS
+        );
     }
 
     /**
