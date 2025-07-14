@@ -42,12 +42,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
-<body class="bg-gray-50">
+<body class="bg-white min-h-screen">
   <div class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
     <!-- Header com logo DurvalCRM -->
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
       <div class="flex justify-center">
-        <img class="h-12 w-auto" src="${url.resourcesPath}/img/logo-durvalcrm.svg" alt="DurvalCRM" />
+        <img class="h-6 w-auto" src="${url.resourcesPath}/img/logo-durvalcrm.svg" alt="DurvalCRM" />
       </div>
       <h2 class="mt-6 text-center text-4xl font-bold tracking-tight text-blue-600">
         DurvalCRM
