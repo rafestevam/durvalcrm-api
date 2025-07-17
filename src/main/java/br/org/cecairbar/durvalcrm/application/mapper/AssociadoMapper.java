@@ -3,14 +3,11 @@ package br.org.cecairbar.durvalcrm.application.mapper;
 import br.org.cecairbar.durvalcrm.application.dto.AssociadoDTO;
 import br.org.cecairbar.durvalcrm.domain.model.Associado;
 import br.org.cecairbar.durvalcrm.infrastructure.persistence.entity.AssociadoEntity;
-import jakarta.enterprise.context.ApplicationScoped;
-
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import java.util.List;
 
 @Mapper(componentModel = "cdi")
-@ApplicationScoped
 public interface AssociadoMapper {
 
     // =============================
