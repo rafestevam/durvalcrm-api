@@ -19,13 +19,23 @@ public class MarcarMensalidadeComoPagaUseCaseImpl implements MarcarMensalidadeCo
     @Override
     @Transactional
     public void executar(UUID mensalidadeId, Instant dataPagamento) {
+        System.out.println("Marcando mensalidade como paga: " + mensalidadeId);
+        
         Mensalidade mensalidade = mensalidadeRepository.findById(mensalidadeId);
         
         if (mensalidade == null) {
+            System.out.println("Mensalidade não encontrada: " + mensalidadeId);
             throw new NotFoundException("Mensalidade não encontrada");
         }
         
+        System.out.println("Mensalidade encontrada, status atual: " + mensalidade.getStatus());
+        
         mensalidade.marcarComoPaga(dataPagamento);
+        
+        System.out.println("Status após marcar como paga: " + mensalidade.getStatus());
+        
         mensalidadeRepository.update(mensalidade);
+        
+        System.out.println("Mensalidade atualizada no banco de dados");
     }
 }

@@ -150,20 +150,25 @@ public class MensalidadeRepositoryImpl implements MensalidadeRepository {
 
     @Override
     public void update(Mensalidade mensalidade) {
-        Optional<MensalidadeEntity> entityOpt = MensalidadeEntity.findByIdOptional(mensalidade.getId());
-        if (entityOpt.isPresent()) {
-            MensalidadeEntity entity = entityOpt.get();
-            // Update fields individually since updateFromDomain may not exist
-            entity.associadoId = mensalidade.getAssociadoId();
-            entity.mesReferencia = mensalidade.getMesReferencia();
-            entity.anoReferencia = mensalidade.getAnoReferencia();
-            entity.valor = mensalidade.getValor();
-            entity.status = mensalidade.getStatus();
-            entity.dataVencimento = mensalidade.getDataVencimento();
-            entity.dataPagamento = mensalidade.getDataPagamento();
-            entity.qrCodePix = mensalidade.getQrCodePix();
-            entity.identificadorPix = mensalidade.getIdentificadorPix();
-            entity.persist();
+        // Usar update direto via HQL para garantir que seja persistido
+        int updated = MensalidadeEntity.update(
+            "associadoId = ?1, mesReferencia = ?2, anoReferencia = ?3, valor = ?4, " +
+            "status = ?5, dataVencimento = ?6, dataPagamento = ?7, qrCodePix = ?8, identificadorPix = ?9 " +
+            "WHERE id = ?10",
+            mensalidade.getAssociadoId(),
+            mensalidade.getMesReferencia(),
+            mensalidade.getAnoReferencia(),
+            mensalidade.getValor(),
+            mensalidade.getStatus(),
+            mensalidade.getDataVencimento(),
+            mensalidade.getDataPagamento(),
+            mensalidade.getQrCodePix(),
+            mensalidade.getIdentificadorPix(),
+            mensalidade.getId()
+        );
+        
+        if (updated == 0) {
+            throw new RuntimeException("Mensalidade não encontrada para atualização: " + mensalidade.getId());
         }
     }
 
