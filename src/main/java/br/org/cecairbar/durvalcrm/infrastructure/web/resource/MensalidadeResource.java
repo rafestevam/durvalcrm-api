@@ -2,9 +2,11 @@ package br.org.cecairbar.durvalcrm.infrastructure.web.resource;
 
 import br.org.cecairbar.durvalcrm.application.usecase.GerarCobrancasMensaisUseCase;
 import br.org.cecairbar.durvalcrm.application.usecase.ConsultarMensalidadesUseCase;
+import br.org.cecairbar.durvalcrm.application.usecase.mensalidade.MarcarMensalidadeComoPagaUseCase;
 import br.org.cecairbar.durvalcrm.application.dto.MensalidadeDTO;
 import br.org.cecairbar.durvalcrm.application.dto.ResumoMensalidadesDTO;
 import br.org.cecairbar.durvalcrm.application.dto.ResultadoGeracaoDTO;
+import br.org.cecairbar.durvalcrm.application.dto.MarcarPagamentoDTO;
 
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.annotation.security.PermitAll;
@@ -15,8 +17,10 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Path("/api/mensalidades")
 @Produces(MediaType.APPLICATION_JSON)
@@ -29,6 +33,9 @@ public class MensalidadeResource {
 
     @Inject
     ConsultarMensalidadesUseCase consultarMensalidadesUseCase;
+
+    @Inject
+    MarcarMensalidadeComoPagaUseCase marcarMensalidadeComoPagaUseCase;
 
     /**
      * Endpoint para obter resumo das mensalidades por período
@@ -293,6 +300,51 @@ public class MensalidadeResource {
             
         } catch (Exception e) {
             System.err.println("Erro ao gerar QR Code: " + e.getMessage());
+            e.printStackTrace();
+            
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(Map.of(
+                    "error", "Erro interno do servidor",
+                    "message", e.getMessage(),
+                    "status", 500
+                ))
+                .build();
+        }
+    }
+
+    /**
+     * Endpoint para marcar mensalidade como paga
+     * PATCH /mensalidades/{id}/pagar
+     */
+    @PATCH
+    @Path("/{id}/pagar")
+    public Response marcarComoPaga(@PathParam("id") String id, MarcarPagamentoDTO dto) {
+        try {
+            if (id == null || id.trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(Map.of(
+                        "error", "ID da mensalidade é obrigatório",
+                        "status", 400
+                    ))
+                    .build();
+            }
+
+            UUID mensalidadeId = UUID.fromString(id);
+            Instant dataPagamento = dto.getDataPagamento() != null ? dto.getDataPagamento() : Instant.now();
+            
+            marcarMensalidadeComoPagaUseCase.executar(mensalidadeId, dataPagamento);
+            
+            return Response.ok(Map.of("message", "Mensalidade marcada como paga com sucesso")).build();
+            
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                .entity(Map.of(
+                    "error", "ID inválido",
+                    "status", 400
+                ))
+                .build();
+        } catch (Exception e) {
+            System.err.println("Erro ao marcar mensalidade como paga: " + e.getMessage());
             e.printStackTrace();
             
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
