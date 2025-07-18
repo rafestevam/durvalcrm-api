@@ -146,6 +146,7 @@ public class ResumoMensalidadesDTO {
         List<Mensalidade> mensalidades, 
         int totalAssociadosAtivos) {
         
+        
         if (mensalidades == null || mensalidades.isEmpty()) {
             return new ResumoMensalidadesDTO(
                 totalAssociadosAtivos, 0, 0, 0, 
@@ -188,9 +189,11 @@ public class ResumoMensalidadesDTO {
             }
         }
 
-        // Calcular pendentes para associados sem mensalidades geradas
+        // Calcular mensalidades não geradas como pendentes
+        // Apenas associados que ainda não têm mensalidade gerada para o período
         int associadosSemMensalidade = totalAssociadosAtivos - mensalidades.size();
         if (associadosSemMensalidade > 0) {
+            // Estes associados não têm mensalidade gerada ainda - são considerados pendentes
             totalPendentes += associadosSemMensalidade;
             valorPendente = valorPendente.add(
                 BigDecimal.valueOf(associadosSemMensalidade).multiply(new BigDecimal("10.90"))

@@ -293,13 +293,30 @@ public class MensalidadeResource {
                     .build();
             }
 
-            // TODO: Implementar geração do QR Code PIX
-            String qrCode = "00020101021243650016BR.GOV.BCB.PIX013671234567890123456789";
+            MensalidadeDTO mensalidade = consultarMensalidadesUseCase.obterPorId(id);
             
-            return Response.ok(Map.of("qrCode", qrCode)).build();
+            if (mensalidade == null) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of(
+                        "error", "Mensalidade não encontrada",
+                        "status", 404
+                    ))
+                    .build();
+            }
+            
+            if (mensalidade.qrCodePix == null || mensalidade.qrCodePix.trim().isEmpty()) {
+                return Response.status(Response.Status.NOT_FOUND)
+                    .entity(Map.of(
+                        "error", "QR Code não disponível para esta mensalidade",
+                        "status", 404
+                    ))
+                    .build();
+            }
+            
+            return Response.ok(Map.of("qrCode", mensalidade.qrCodePix)).build();
             
         } catch (Exception e) {
-            System.err.println("Erro ao gerar QR Code: " + e.getMessage());
+            System.err.println("Erro ao obter QR Code: " + e.getMessage());
             e.printStackTrace();
             
             return Response.status(Response.Status.INTERNAL_SERVER_ERROR)

@@ -73,7 +73,7 @@ public class AssociadoRepositoryImpl implements AssociadoRepository {
 
     @Override
     public Optional<Associado> findByCpf(String cpf) {
-        return AssociadoEntity.<AssociadoEntity>find("cpf = ?1 and ativo = true", cpf)
+        return AssociadoEntity.<AssociadoEntity>find("cpf = ?1", cpf)
                 .firstResultOptional()
                 .map(mapper::toDomain);
     }
