@@ -189,36 +189,6 @@ public class VendaResource {
     }
 
     /**
-     * Listar vendas por associado
-     * GET /api/vendas/associado/{associadoId}
-     */
-    @GET
-    @Path("/associado/{associadoId}")
-    public Response listarPorAssociado(@PathParam("associadoId") String associadoId) {
-        try {
-            UUID id = UUID.fromString(associadoId);
-            List<VendaDTO> vendas = vendaUseCase.listarPorAssociado(id);
-            return Response.ok(vendas).build();
-            
-        } catch (IllegalArgumentException e) {
-            return Response.status(Response.Status.BAD_REQUEST)
-                .entity(Map.of(
-                    "error", "ID de associado inválido",
-                    "status", 400
-                ))
-                .build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity(Map.of(
-                    "error", "Erro ao listar vendas por associado",
-                    "message", e.getMessage(),
-                    "status", 500
-                ))
-                .build();
-        }
-    }
-
-    /**
      * Listar vendas por origem
      * GET /api/vendas/origem/{origem}
      */

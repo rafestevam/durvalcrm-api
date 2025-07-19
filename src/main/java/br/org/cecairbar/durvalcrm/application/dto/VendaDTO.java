@@ -36,26 +36,15 @@ public class VendaDTO {
     
     private Instant dataVenda;
     
-    @Size(max = 500, message = "Observações devem ter no máximo 500 caracteres")
-    private String observacoes;
-    
-    @NotNull(message = "Associado é obrigatório")
-    private UUID associadoId;
-    
-    private String nomeAssociado; // Para exibição no frontend
-    
     private Instant criadoEm;
     private Instant atualizadoEm;
     
     // Factory method para criar nova venda
-    public static VendaDTO criar(String descricao, BigDecimal valor, OrigemVenda origem, 
-                                 UUID associadoId, String observacoes) {
+    public static VendaDTO criar(String descricao, BigDecimal valor, OrigemVenda origem) {
         return VendaDTO.builder()
                 .descricao(descricao)
                 .valor(valor)
                 .origem(origem)
-                .associadoId(associadoId)
-                .observacoes(observacoes)
                 .dataVenda(Instant.now())
                 .build();
     }

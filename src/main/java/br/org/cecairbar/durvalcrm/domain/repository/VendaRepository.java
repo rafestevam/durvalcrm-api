@@ -33,19 +33,9 @@ public interface VendaRepository {
     List<Venda> findByPeriodo(Instant dataInicio, Instant dataFim);
     
     /**
-     * Lista vendas por associado
-     */
-    List<Venda> findByAssociadoId(UUID associadoId);
-    
-    /**
      * Lista vendas por origem
      */
     List<Venda> findByOrigem(OrigemVenda origem);
-    
-    /**
-     * Lista vendas por associado e período
-     */
-    List<Venda> findByAssociadoIdAndPeriodo(UUID associadoId, Instant dataInicio, Instant dataFim);
     
     /**
      * Lista vendas por origem e período
@@ -96,9 +86,4 @@ public interface VendaRepository {
      * Lista vendas recentes (últimos 30 dias)
      */
     List<Venda> findRecentes();
-    
-    /**
-     * Lista vendas por associado (últimos 30 dias)
-     */
-    List<Venda> findRecentesByAssociadoId(UUID associadoId);
 }

@@ -41,11 +41,6 @@ public interface VendaUseCase {
     List<VendaDTO> listarPorPeriodo(Instant dataInicio, Instant dataFim);
     
     /**
-     * Listar vendas por associado
-     */
-    List<VendaDTO> listarPorAssociado(UUID associadoId);
-    
-    /**
      * Listar vendas por origem
      */
     List<VendaDTO> listarPorOrigem(OrigemVenda origem);

@@ -53,25 +53,8 @@ public class VendaRepositoryImpl implements VendaRepository {
     }
     
     @Override
-    public List<Venda> findByAssociadoId(UUID associadoId) {
-        return panacheRepository.find("associadoId", associadoId)
-                .stream()
-                .map(this::toDomain)
-                .collect(Collectors.toList());
-    }
-    
-    @Override
     public List<Venda> findByOrigem(OrigemVenda origem) {
         return panacheRepository.find("origem", origem)
-                .stream()
-                .map(this::toDomain)
-                .collect(Collectors.toList());
-    }
-    
-    @Override
-    public List<Venda> findByAssociadoIdAndPeriodo(UUID associadoId, Instant dataInicio, Instant dataFim) {
-        return panacheRepository.find("associadoId = ?1 and dataVenda >= ?2 and dataVenda <= ?3", 
-                   associadoId, dataInicio, dataFim)
                 .stream()
                 .map(this::toDomain)
                 .collect(Collectors.toList());
@@ -149,12 +132,6 @@ public class VendaRepositoryImpl implements VendaRepository {
         return findByPeriodo(trintaDiasAtras, Instant.now());
     }
     
-    @Override
-    public List<Venda> findRecentesByAssociadoId(UUID associadoId) {
-        Instant trintaDiasAtras = Instant.now().minus(30, ChronoUnit.DAYS);
-        return findByAssociadoIdAndPeriodo(associadoId, trintaDiasAtras, Instant.now());
-    }
-    
     // Métodos de conversão
     private VendaEntity toEntity(Venda venda) {
         return VendaEntity.builder()
@@ -163,8 +140,6 @@ public class VendaRepositoryImpl implements VendaRepository {
                 .valor(venda.getValor())
                 .origem(venda.getOrigem())
                 .dataVenda(venda.getDataVenda())
-                .observacoes(venda.getObservacoes())
-                .associadoId(venda.getAssociadoId())
                 .criadoEm(venda.getCriadoEm())
                 .atualizadoEm(venda.getAtualizadoEm())
                 .build();
@@ -177,8 +152,6 @@ public class VendaRepositoryImpl implements VendaRepository {
                 .valor(entity.getValor())
                 .origem(entity.getOrigem())
                 .dataVenda(entity.getDataVenda())
-                .observacoes(entity.getObservacoes())
-                .associadoId(entity.getAssociadoId())
                 .criadoEm(entity.getCriadoEm())
                 .atualizadoEm(entity.getAtualizadoEm())
                 .build();

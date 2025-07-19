@@ -37,34 +37,25 @@ public class Venda {
     @NotNull
     private Instant dataVenda;
     
-    @Size(max = 500)
-    private String observacoes;
-    
-    @NotNull
-    private UUID associadoId;
-    
     @NotNull
     private Instant criadoEm;
     
     private Instant atualizadoEm;
     
     // Factory method para criar nova venda
-    public static Venda criar(String descricao, BigDecimal valor, OrigemVenda origem, 
-                              UUID associadoId, String observacoes) {
+    public static Venda criar(String descricao, BigDecimal valor, OrigemVenda origem) {
         return Venda.builder()
                 .id(UUID.randomUUID())
                 .descricao(descricao)
                 .valor(valor)
                 .origem(origem)
-                .associadoId(associadoId)
-                .observacoes(observacoes)
                 .dataVenda(Instant.now())
                 .criadoEm(Instant.now())
                 .build();
     }
     
     // Método para atualizar dados da venda
-    public void atualizar(String descricao, BigDecimal valor, OrigemVenda origem, String observacoes) {
+    public void atualizar(String descricao, BigDecimal valor, OrigemVenda origem) {
         if (descricao != null && !descricao.trim().isEmpty()) {
             this.descricao = descricao;
         }
@@ -74,7 +65,6 @@ public class Venda {
         if (origem != null) {
             this.origem = origem;
         }
-        this.observacoes = observacoes;
         this.atualizadoEm = Instant.now();
     }
     
@@ -84,7 +74,6 @@ public class Venda {
                descricao != null && !descricao.trim().isEmpty() &&
                valor != null && valor.compareTo(BigDecimal.ZERO) > 0 &&
                origem != null &&
-               associadoId != null &&
                dataVenda != null &&
                criadoEm != null;
     }

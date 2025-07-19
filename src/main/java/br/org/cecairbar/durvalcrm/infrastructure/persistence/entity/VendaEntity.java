@@ -36,12 +36,6 @@ public class VendaEntity {
     @Column(name = "data_venda", nullable = false)
     private Instant dataVenda;
     
-    @Column(name = "observacoes", length = 500)
-    private String observacoes;
-    
-    @Column(name = "associado_id", nullable = false)
-    private UUID associadoId;
-    
     @Column(name = "criado_em", nullable = false)
     private Instant criadoEm;
     

@@ -5,8 +5,6 @@ import br.org.cecairbar.durvalcrm.application.dto.ResumoVendasDTO;
 import br.org.cecairbar.durvalcrm.domain.model.Venda;
 import br.org.cecairbar.durvalcrm.domain.model.OrigemVenda;
 import br.org.cecairbar.durvalcrm.domain.repository.VendaRepository;
-import br.org.cecairbar.durvalcrm.domain.repository.AssociadoRepository;
-import br.org.cecairbar.durvalcrm.domain.model.Associado;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -28,30 +26,22 @@ public class VendaUseCaseImpl implements VendaUseCase {
     @Inject
     VendaRepository vendaRepository;
     
-    @Inject
-    AssociadoRepository associadoRepository;
     
     @Override
     @Transactional
     public VendaDTO criar(VendaDTO vendaDTO) {
-        // Validar se associado existe
-        Associado associado = associadoRepository.findById(vendaDTO.getAssociadoId())
-                .orElseThrow(() -> new NotFoundException("Associado não encontrado"));
-        
         // Criar venda
         Venda venda = Venda.criar(
             vendaDTO.getDescricao(),
             vendaDTO.getValor(),
-            vendaDTO.getOrigem(),
-            vendaDTO.getAssociadoId(),
-            vendaDTO.getObservacoes()
+            vendaDTO.getOrigem()
         );
         
         // Salvar
         vendaRepository.save(venda);
         
         // Retornar DTO
-        return toDTO(venda, associado.getNomeCompleto());
+        return toDTO(venda);
     }
     
     @Override
@@ -61,12 +51,7 @@ public class VendaUseCaseImpl implements VendaUseCase {
             throw new NotFoundException("Venda não encontrada");
         }
         
-        // Buscar nome do associado
-        String nomeAssociado = associadoRepository.findById(venda.getAssociadoId())
-                .map(Associado::getNomeCompleto)
-                .orElse("Não encontrado");
-        
-        return toDTO(venda, nomeAssociado);
+        return toDTO(venda);
     }
     
     @Override
@@ -77,29 +62,17 @@ public class VendaUseCaseImpl implements VendaUseCase {
             throw new NotFoundException("Venda não encontrada");
         }
         
-        // Validar se associado existe (se mudou)
-        if (!venda.getAssociadoId().equals(vendaDTO.getAssociadoId())) {
-            associadoRepository.findById(vendaDTO.getAssociadoId())
-                    .orElseThrow(() -> new NotFoundException("Associado não encontrado"));
-        }
-        
         // Atualizar venda
         venda.atualizar(
             vendaDTO.getDescricao(),
             vendaDTO.getValor(),
-            vendaDTO.getOrigem(),
-            vendaDTO.getObservacoes()
+            vendaDTO.getOrigem()
         );
         
         // Salvar
         vendaRepository.update(venda);
         
-        // Buscar nome do associado
-        String nomeAssociado = associadoRepository.findById(venda.getAssociadoId())
-                .map(Associado::getNomeCompleto)
-                .orElse("Não encontrado");
-        
-        return toDTO(venda, nomeAssociado);
+        return toDTO(venda);
     }
     
     @Override
@@ -114,7 +87,7 @@ public class VendaUseCaseImpl implements VendaUseCase {
     @Override
     public List<VendaDTO> listarTodas() {
         return vendaRepository.findAll().stream()
-                .map(this::toDTOComAssociado)
+                .map(this::toDTO)
                 .collect(Collectors.toList());
     }
     
@@ -125,32 +98,21 @@ public class VendaUseCaseImpl implements VendaUseCase {
         }
         
         return vendaRepository.findByPeriodo(dataInicio, dataFim).stream()
-                .map(this::toDTOComAssociado)
-                .collect(Collectors.toList());
-    }
-    
-    @Override
-    public List<VendaDTO> listarPorAssociado(UUID associadoId) {
-        // Verificar se associado existe
-        associadoRepository.findById(associadoId)
-                .orElseThrow(() -> new NotFoundException("Associado não encontrado"));
-        
-        return vendaRepository.findByAssociadoId(associadoId).stream()
-                .map(this::toDTOComAssociado)
+                .map(this::toDTO)
                 .collect(Collectors.toList());
     }
     
     @Override
     public List<VendaDTO> listarPorOrigem(OrigemVenda origem) {
         return vendaRepository.findByOrigem(origem).stream()
-                .map(this::toDTOComAssociado)
+                .map(this::toDTO)
                 .collect(Collectors.toList());
     }
     
     @Override
     public List<VendaDTO> listarRecentes() {
         return vendaRepository.findRecentes().stream()
-                .map(this::toDTOComAssociado)
+                .map(this::toDTO)
                 .collect(Collectors.toList());
     }
     
@@ -197,25 +159,15 @@ public class VendaUseCaseImpl implements VendaUseCase {
     }
     
     // Métodos auxiliares
-    private VendaDTO toDTO(Venda venda, String nomeAssociado) {
+    private VendaDTO toDTO(Venda venda) {
         return VendaDTO.builder()
                 .id(venda.getId())
                 .descricao(venda.getDescricao())
                 .valor(venda.getValor())
                 .origem(venda.getOrigem())
                 .dataVenda(venda.getDataVenda())
-                .observacoes(venda.getObservacoes())
-                .associadoId(venda.getAssociadoId())
-                .nomeAssociado(nomeAssociado)
                 .criadoEm(venda.getCriadoEm())
                 .atualizadoEm(venda.getAtualizadoEm())
                 .build();
-    }
-    
-    private VendaDTO toDTOComAssociado(Venda venda) {
-        String nomeAssociado = associadoRepository.findById(venda.getAssociadoId())
-                .map(Associado::getNomeCompleto)
-                .orElse("Não encontrado");
-        return toDTO(venda, nomeAssociado);
     }
 }
