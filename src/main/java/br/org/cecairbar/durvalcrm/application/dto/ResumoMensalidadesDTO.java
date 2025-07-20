@@ -1,10 +1,10 @@
 package br.org.cecairbar.durvalcrm.application.dto;
 
 import br.org.cecairbar.durvalcrm.domain.model.Mensalidade;
-import br.org.cecairbar.durvalcrm.domain.model.StatusMensalidade;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
 /**
@@ -118,7 +118,7 @@ public class ResumoMensalidadesDTO {
         double percentualArrecadacao = 0.0;
         if (valorTotalEsperado.compareTo(BigDecimal.ZERO) > 0) {
             percentualArrecadacao = valorArrecadado
-                .divide(valorTotalEsperado, 4, BigDecimal.ROUND_HALF_UP)
+                .divide(valorTotalEsperado, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
                 .doubleValue();
         }
@@ -204,7 +204,7 @@ public class ResumoMensalidadesDTO {
         double percentualArrecadacao = 0.0;
         if (valorTotalEsperado.compareTo(BigDecimal.ZERO) > 0) {
             percentualArrecadacao = valorArrecadado
-                .divide(valorTotalEsperado, 4, BigDecimal.ROUND_HALF_UP)
+                .divide(valorTotalEsperado, 4, RoundingMode.HALF_UP)
                 .multiply(BigDecimal.valueOf(100))
                 .doubleValue();
         }

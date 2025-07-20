@@ -4,7 +4,6 @@ import br.org.cecairbar.durvalcrm.domain.model.Venda;
 import br.org.cecairbar.durvalcrm.domain.model.OrigemVenda;
 import br.org.cecairbar.durvalcrm.domain.repository.VendaRepository;
 import br.org.cecairbar.durvalcrm.infrastructure.persistence.entity.VendaEntity;
-import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManager;

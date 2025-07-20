@@ -10,7 +10,6 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class AuthResourceMockTest {

@@ -11,8 +11,6 @@ import br.org.cecairbar.durvalcrm.application.dto.MarcarPagamentoDTO;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;

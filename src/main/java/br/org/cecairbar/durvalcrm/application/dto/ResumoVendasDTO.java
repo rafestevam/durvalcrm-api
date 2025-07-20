@@ -7,9 +7,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Map;
-import java.util.HashMap;
 
 @Data
 @NoArgsConstructor
@@ -58,7 +58,7 @@ public class ResumoVendasDTO {
         
         // Calcular valor médio
         if (totalVendas > 0) {
-            resumo.setValorMedioVenda(valorTotal.divide(BigDecimal.valueOf(totalVendas), 2, BigDecimal.ROUND_HALF_UP));
+            resumo.setValorMedioVenda(valorTotal.divide(BigDecimal.valueOf(totalVendas), 2, RoundingMode.HALF_UP));
         } else {
             resumo.setValorMedioVenda(BigDecimal.ZERO);
         }
@@ -75,9 +75,9 @@ public class ResumoVendasDTO {
         
         // Calcular percentuais
         if (valorTotal.compareTo(BigDecimal.ZERO) > 0) {
-            resumo.setPercentualCantina(resumo.getValorCantina().multiply(BigDecimal.valueOf(100)).divide(valorTotal, 2, BigDecimal.ROUND_HALF_UP));
-            resumo.setPercentualBazar(resumo.getValorBazar().multiply(BigDecimal.valueOf(100)).divide(valorTotal, 2, BigDecimal.ROUND_HALF_UP));
-            resumo.setPercentualLivros(resumo.getValorLivros().multiply(BigDecimal.valueOf(100)).divide(valorTotal, 2, BigDecimal.ROUND_HALF_UP));
+            resumo.setPercentualCantina(resumo.getValorCantina().multiply(BigDecimal.valueOf(100)).divide(valorTotal, 2, RoundingMode.HALF_UP));
+            resumo.setPercentualBazar(resumo.getValorBazar().multiply(BigDecimal.valueOf(100)).divide(valorTotal, 2, RoundingMode.HALF_UP));
+            resumo.setPercentualLivros(resumo.getValorLivros().multiply(BigDecimal.valueOf(100)).divide(valorTotal, 2, RoundingMode.HALF_UP));
         } else {
             resumo.setPercentualCantina(BigDecimal.ZERO);
             resumo.setPercentualBazar(BigDecimal.ZERO);
