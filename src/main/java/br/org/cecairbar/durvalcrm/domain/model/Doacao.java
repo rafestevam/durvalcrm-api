@@ -14,7 +14,7 @@ public class Doacao {
     private LocalDateTime dataDoacao;
     private LocalDateTime dataConfirmacao;
     private String codigoTransacao;
-    private String metodoPagamento;
+    private MetodoPagamento metodoPagamento;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -104,11 +104,11 @@ public class Doacao {
         this.codigoTransacao = codigoTransacao;
     }
 
-    public String getMetodoPagamento() {
+    public MetodoPagamento getMetodoPagamento() {
         return metodoPagamento;
     }
 
-    public void setMetodoPagamento(String metodoPagamento) {
+    public void setMetodoPagamento(MetodoPagamento metodoPagamento) {
         this.metodoPagamento = metodoPagamento;
     }
 

@@ -32,17 +32,11 @@ public interface DoacaoEntityMapper {
     
     @Named("associadoToEntity")
     default AssociadoEntity associadoToEntity(Associado associado) {
-        if (associado == null) {
+        if (associado == null || associado.getId() == null) {
             return null;
         }
-        AssociadoEntity entity = new AssociadoEntity();
-        entity.id = associado.getId();
-        entity.nomeCompleto = associado.getNomeCompleto();
-        entity.cpf = associado.getCpf();
-        entity.email = associado.getEmail();
-        entity.telefone = associado.getTelefone();
-        entity.ativo = associado.isAtivo();
-        return entity;
+        // Get reference to existing entity instead of creating a new one
+        return AssociadoEntity.getEntityManager().getReference(AssociadoEntity.class, associado.getId());
     }
     
     @Named("entityToAssociado")

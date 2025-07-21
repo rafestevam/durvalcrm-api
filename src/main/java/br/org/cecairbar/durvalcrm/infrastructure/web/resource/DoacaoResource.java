@@ -8,12 +8,14 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import br.org.cecairbar.durvalcrm.application.doacao.*;
+import br.org.cecairbar.durvalcrm.domain.model.MetodoPagamento;
 
-@Path("/api/v1/doacoes")
+@Path("/api/doacoes")
 @Authenticated
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -49,9 +51,8 @@ public class DoacaoResource {
             @QueryParam("inicio") String inicioStr,
             @QueryParam("fim") String fimStr) {
         
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-        LocalDateTime inicio = LocalDateTime.parse(inicioStr, formatter);
-        LocalDateTime fim = LocalDateTime.parse(fimStr, formatter);
+        LocalDateTime inicio = parseDateTime(inicioStr);
+        LocalDateTime fim = parseDateTime(fimStr);
         
         return Response.ok(doacaoService.listarPorPeriodo(inicio, fim)).build();
     }
@@ -85,8 +86,9 @@ public class DoacaoResource {
             @PathParam("id") UUID id,
             ConfirmarPagamentoRequest request) {
         try {
+            MetodoPagamento metodoPagamento = MetodoPagamento.valueOf(request.getMetodoPagamento());
             DoacaoDTO doacao = doacaoService.confirmarPagamento(
-                    id, request.getCodigoTransacao(), request.getMetodoPagamento());
+                    id, request.getCodigoTransacao(), metodoPagamento);
             return Response.ok(doacao).build();
         } catch (IllegalArgumentException e) {
             return Response.status(Response.Status.NOT_FOUND)
@@ -133,9 +135,8 @@ public class DoacaoResource {
             @QueryParam("inicio") String inicioStr,
             @QueryParam("fim") String fimStr) {
         
-        DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-        LocalDateTime inicio = LocalDateTime.parse(inicioStr, formatter);
-        LocalDateTime fim = LocalDateTime.parse(fimStr, formatter);
+        LocalDateTime inicio = parseDateTime(inicioStr);
+        LocalDateTime fim = parseDateTime(fimStr);
         
         return Response.ok(doacaoService.obterEstatisticas(inicio, fim)).build();
     }
@@ -202,6 +203,21 @@ public class DoacaoResource {
         
         public void setMessage(String message) {
             this.message = message;
+        }
+    }
+    
+    private LocalDateTime parseDateTime(String dateTimeStr) {
+        try {
+            // Primeiro tenta com timezone (ISO_OFFSET_DATE_TIME)
+            OffsetDateTime offsetDateTime = OffsetDateTime.parse(dateTimeStr);
+            return offsetDateTime.toLocalDateTime();
+        } catch (Exception e) {
+            try {
+                // Se falhar, tenta sem timezone (ISO_LOCAL_DATE_TIME)
+                return LocalDateTime.parse(dateTimeStr, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            } catch (Exception e2) {
+                throw new IllegalArgumentException("Formato de data inválido: " + dateTimeStr);
+            }
         }
     }
 }

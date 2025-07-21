@@ -2,6 +2,7 @@ package br.org.cecairbar.durvalcrm.application.doacao;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import br.org.cecairbar.durvalcrm.domain.model.MetodoPagamento;
 import br.org.cecairbar.durvalcrm.domain.model.StatusDoacao;
 import br.org.cecairbar.durvalcrm.domain.model.TipoDoacao;
 import jakarta.validation.constraints.NotNull;
@@ -14,7 +15,6 @@ import java.util.UUID;
 public class DoacaoDTO {
     private UUID id;
     
-    @NotNull(message = "O ID do associado é obrigatório")
     private UUID associadoId;
     
     private String nomeAssociado;
@@ -38,7 +38,7 @@ public class DoacaoDTO {
     
     private String codigoTransacao;
     
-    private String metodoPagamento;
+    private MetodoPagamento metodoPagamento;
     
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
@@ -126,11 +126,11 @@ public class DoacaoDTO {
         this.codigoTransacao = codigoTransacao;
     }
 
-    public String getMetodoPagamento() {
+    public MetodoPagamento getMetodoPagamento() {
         return metodoPagamento;
     }
 
-    public void setMetodoPagamento(String metodoPagamento) {
+    public void setMetodoPagamento(MetodoPagamento metodoPagamento) {
         this.metodoPagamento = metodoPagamento;
     }
 

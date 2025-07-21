@@ -1,5 +1,6 @@
 package br.org.cecairbar.durvalcrm.infrastructure.persistence.entity;
 
+import br.org.cecairbar.durvalcrm.domain.model.MetodoPagamento;
 import br.org.cecairbar.durvalcrm.domain.model.StatusDoacao;
 import br.org.cecairbar.durvalcrm.domain.model.TipoDoacao;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
@@ -17,9 +18,8 @@ public class DoacaoEntity extends PanacheEntityBase {
     @GeneratedValue(generator = "UUID")
     public UUID id;
 
-    @NotNull
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "associado_id", nullable = false)
+    @JoinColumn(name = "associado_id", nullable = true)
     public AssociadoEntity associado;
 
     @NotNull
@@ -50,8 +50,9 @@ public class DoacaoEntity extends PanacheEntityBase {
     @Column(name = "codigo_transacao")
     public String codigoTransacao;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "metodo_pagamento")
-    public String metodoPagamento;
+    public MetodoPagamento metodoPagamento;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     public LocalDateTime createdAt;

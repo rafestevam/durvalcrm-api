@@ -45,14 +45,21 @@ public class DoacaoService {
     
     @Transactional
     public DoacaoDTO criar(DoacaoDTO dto) {
-        Associado associado = associadoRepository.findById(dto.getAssociadoId())
-                .orElseThrow(() -> new IllegalArgumentException("Associado não encontrado"));
-        
         Doacao doacao = mapper.toEntity(dto);
-        doacao.setAssociado(associado);
+        
+        // Associar a um associado apenas se fornecido (doações anônimas são permitidas)
+        if (dto.getAssociadoId() != null) {
+            Associado associado = associadoRepository.findById(dto.getAssociadoId())
+                    .orElseThrow(() -> new IllegalArgumentException("Associado não encontrado"));
+            doacao.setAssociado(associado);
+        }
         
         if (doacao.getStatus() == null) {
             doacao.setStatus(StatusDoacao.PENDENTE);
+        }
+        
+        if (doacao.getDataDoacao() == null) {
+            doacao.setDataDoacao(LocalDateTime.now());
         }
         
         doacao = doacaoRepository.save(doacao);
@@ -71,7 +78,7 @@ public class DoacaoService {
     }
     
     @Transactional
-    public DoacaoDTO confirmarPagamento(UUID id, String codigoTransacao, String metodoPagamento) {
+    public DoacaoDTO confirmarPagamento(UUID id, String codigoTransacao, MetodoPagamento metodoPagamento) {
         Doacao doacao = doacaoRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Doação não encontrada"));
         
