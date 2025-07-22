@@ -34,7 +34,8 @@ public class VendaUseCaseImpl implements VendaUseCase {
         Venda venda = Venda.criar(
             vendaDTO.getDescricao(),
             vendaDTO.getValor(),
-            vendaDTO.getOrigem()
+            vendaDTO.getOrigem(),
+            vendaDTO.getFormaPagamento()
         );
         
         // Salvar
@@ -66,7 +67,8 @@ public class VendaUseCaseImpl implements VendaUseCase {
         venda.atualizar(
             vendaDTO.getDescricao(),
             vendaDTO.getValor(),
-            vendaDTO.getOrigem()
+            vendaDTO.getOrigem(),
+            vendaDTO.getFormaPagamento()
         );
         
         // Salvar
@@ -165,6 +167,7 @@ public class VendaUseCaseImpl implements VendaUseCase {
                 .descricao(venda.getDescricao())
                 .valor(venda.getValor())
                 .origem(venda.getOrigem())
+                .formaPagamento(venda.getFormaPagamento())
                 .dataVenda(venda.getDataVenda())
                 .criadoEm(venda.getCriadoEm())
                 .atualizadoEm(venda.getAtualizadoEm())

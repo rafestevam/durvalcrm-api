@@ -1,6 +1,7 @@
 package br.org.cecairbar.durvalcrm.infrastructure.persistence.entity;
 
 import br.org.cecairbar.durvalcrm.domain.model.OrigemVenda;
+import br.org.cecairbar.durvalcrm.domain.model.FormaPagamento;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -32,6 +33,10 @@ public class VendaEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "origem", nullable = false)
     private OrigemVenda origem;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "forma_pagamento", nullable = false)
+    private FormaPagamento formaPagamento;
     
     @Column(name = "data_venda", nullable = false)
     private Instant dataVenda;

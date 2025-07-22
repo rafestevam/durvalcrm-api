@@ -35,6 +35,9 @@ public class Venda {
     private OrigemVenda origem;
     
     @NotNull
+    private FormaPagamento formaPagamento;
+    
+    @NotNull
     private Instant dataVenda;
     
     @NotNull
@@ -43,19 +46,20 @@ public class Venda {
     private Instant atualizadoEm;
     
     // Factory method para criar nova venda
-    public static Venda criar(String descricao, BigDecimal valor, OrigemVenda origem) {
+    public static Venda criar(String descricao, BigDecimal valor, OrigemVenda origem, FormaPagamento formaPagamento) {
         return Venda.builder()
                 .id(UUID.randomUUID())
                 .descricao(descricao)
                 .valor(valor)
                 .origem(origem)
+                .formaPagamento(formaPagamento)
                 .dataVenda(Instant.now())
                 .criadoEm(Instant.now())
                 .build();
     }
     
     // Método para atualizar dados da venda
-    public void atualizar(String descricao, BigDecimal valor, OrigemVenda origem) {
+    public void atualizar(String descricao, BigDecimal valor, OrigemVenda origem, FormaPagamento formaPagamento) {
         if (descricao != null && !descricao.trim().isEmpty()) {
             this.descricao = descricao;
         }
@@ -64,6 +68,9 @@ public class Venda {
         }
         if (origem != null) {
             this.origem = origem;
+        }
+        if (formaPagamento != null) {
+            this.formaPagamento = formaPagamento;
         }
         this.atualizadoEm = Instant.now();
     }
@@ -74,6 +81,7 @@ public class Venda {
                descricao != null && !descricao.trim().isEmpty() &&
                valor != null && valor.compareTo(BigDecimal.ZERO) > 0 &&
                origem != null &&
+               formaPagamento != null &&
                dataVenda != null &&
                criadoEm != null;
     }
