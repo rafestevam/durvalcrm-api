@@ -2,6 +2,7 @@ package br.org.cecairbar.durvalcrm.domain.repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,4 +34,6 @@ public interface DoacaoRepository {
     void delete(Doacao doacao);
     
     boolean existsById(UUID id);
+    
+    BigDecimal obterTotalDoacoesPorPeriodo(Instant inicio, Instant fim);
 }

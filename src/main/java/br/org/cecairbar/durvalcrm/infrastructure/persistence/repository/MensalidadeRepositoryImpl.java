@@ -6,6 +6,7 @@ import br.org.cecairbar.durvalcrm.domain.repository.MensalidadeRepository;
 import br.org.cecairbar.durvalcrm.infrastructure.persistence.entity.MensalidadeEntity;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -203,6 +204,28 @@ public class MensalidadeRepositoryImpl implements MensalidadeRepository {
             StatusMensalidade.ATRASADA, mes, ano
         ).stream()
         .map(MensalidadeEntity::toDomain)
+        .collect(Collectors.toList());
+    }
+    
+    @Override
+    public BigDecimal obterValorArrecadadoPorPeriodo(int mes, int ano) {
+        List<MensalidadeEntity> mensalidadesPagas = MensalidadeEntity.find(
+            "status = ?1 and mesReferencia = ?2 and anoReferencia = ?3",
+            StatusMensalidade.PAGA, mes, ano
+        ).list();
+        
+        return mensalidadesPagas.stream()
+            .map(entity -> entity.getValor())
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+    
+    @Override
+    public List<String> obterAssociadosComStatusPorPeriodo(int mes, int ano, StatusMensalidade status) {
+        return MensalidadeEntity.<MensalidadeEntity>find(
+            "status = ?1 and mesReferencia = ?2 and anoReferencia = ?3",
+            status, mes, ano
+        ).stream()
+        .map(entity -> entity.getAssociadoId().toString())
         .collect(Collectors.toList());
     }
 }

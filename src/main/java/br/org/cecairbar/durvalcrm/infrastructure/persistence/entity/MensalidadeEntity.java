@@ -100,5 +100,14 @@ public class MensalidadeEntity extends PanacheEntityBase {
         this.status = mensalidade.getStatus();
         this.identificadorPix = mensalidade.getIdentificadorPix();
         this.qrCodePix = mensalidade.getQrCodePix();
-}
+    }
+    
+    // Getters necessários para os repositórios
+    public BigDecimal getValor() {
+        return valor;
+    }
+    
+    public UUID getAssociadoId() {
+        return associadoId;
+    }
 }

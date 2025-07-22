@@ -1,6 +1,8 @@
 package br.org.cecairbar.durvalcrm.domain.repository;
 
 import br.org.cecairbar.durvalcrm.domain.model.Mensalidade;
+import br.org.cecairbar.durvalcrm.domain.model.StatusMensalidade;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -93,4 +95,14 @@ public interface MensalidadeRepository {
      * Lista mensalidades atrasadas de um período
      */
     List<Mensalidade> findAtrasadasByMesEAno(int mes, int ano);
+    
+    /**
+     * Obtém o valor total arrecadado em um período
+     */
+    BigDecimal obterValorArrecadadoPorPeriodo(int mes, int ano);
+    
+    /**
+     * Obtém a lista de IDs de associados com determinado status de mensalidade em um período
+     */
+    List<String> obterAssociadosComStatusPorPeriodo(int mes, int ano, StatusMensalidade status);
 }

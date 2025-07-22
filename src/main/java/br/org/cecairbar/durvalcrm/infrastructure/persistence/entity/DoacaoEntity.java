@@ -76,4 +76,9 @@ public class DoacaoEntity extends PanacheEntityBase {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+    
+    // Getter para valor
+    public BigDecimal getValor() {
+        return valor;
+    }
 }

@@ -12,6 +12,7 @@ import jakarta.transaction.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -134,5 +135,19 @@ public class DoacaoRepositoryImpl implements DoacaoRepository {
     @Override
     public boolean existsById(UUID id) {
         return DoacaoEntity.count("id = :id", Parameters.with("id", id)) > 0;
+    }
+    
+    @Override
+    public BigDecimal obterTotalDoacoesPorPeriodo(Instant inicio, Instant fim) {
+        // Converter Instant para LocalDateTime
+        LocalDateTime inicioLDT = LocalDateTime.ofInstant(inicio, java.time.ZoneId.systemDefault());
+        LocalDateTime fimLDT = LocalDateTime.ofInstant(fim, java.time.ZoneId.systemDefault());
+        
+        List<DoacaoEntity> doacoes = DoacaoEntity.list("dataDoacao >= ?1 and dataDoacao <= ?2 and status = ?3", 
+            inicioLDT, fimLDT, StatusDoacao.CONFIRMADO);
+        
+        return doacoes.stream()
+            .map(DoacaoEntity::getValor)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 }

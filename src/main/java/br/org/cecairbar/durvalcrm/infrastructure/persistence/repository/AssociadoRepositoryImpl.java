@@ -90,6 +90,15 @@ public class AssociadoRepositoryImpl implements AssociadoRepository {
         List<AssociadoEntity> entities = AssociadoEntity.<AssociadoEntity>find("ativo = ?1", ativo).list();
         return mapper.toDomainList(entities);
     }
-
     
+    @Override
+    public List<Associado> findAll() {
+        List<AssociadoEntity> entities = AssociadoEntity.listAll();
+        return mapper.toDomainList(entities);
+    }
+    
+    @Override
+    public long count() {
+        return AssociadoEntity.count();
+    }
 }
