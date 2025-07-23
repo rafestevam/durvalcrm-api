@@ -144,7 +144,7 @@ public class DoacaoRepositoryImpl implements DoacaoRepository {
         LocalDateTime fimLDT = LocalDateTime.ofInstant(fim, java.time.ZoneId.systemDefault());
         
         List<DoacaoEntity> doacoes = DoacaoEntity.list("dataDoacao >= ?1 and dataDoacao <= ?2 and status = ?3", 
-            inicioLDT, fimLDT, StatusDoacao.CONFIRMADO);
+            inicioLDT, fimLDT, StatusDoacao.CONFIRMADA);
         
         return doacoes.stream()
             .map(DoacaoEntity::getValor)

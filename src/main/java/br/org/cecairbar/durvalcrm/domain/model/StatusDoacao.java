@@ -3,7 +3,6 @@ package br.org.cecairbar.durvalcrm.domain.model;
 public enum StatusDoacao {
     PENDENTE("Pendente"),
     PROCESSANDO("Processando"),
-    CONFIRMADO("Confirmado"),
     CONFIRMADA("Confirmada"),
     CANCELADA("Cancelada");
 
