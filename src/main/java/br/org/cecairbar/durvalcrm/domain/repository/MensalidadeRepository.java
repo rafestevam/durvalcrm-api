@@ -105,4 +105,9 @@ public interface MensalidadeRepository {
      * Obtém a lista de IDs de associados com determinado status de mensalidade em um período
      */
     List<String> obterAssociadosComStatusPorPeriodo(int mes, int ano, StatusMensalidade status);
+    
+    /**
+     * Obtém a lista de IDs de associados com mensalidades vencidas (PENDENTE e vencidas)
+     */
+    List<String> obterAssociadosComMensalidadesVencidas(int mes, int ano);
 }

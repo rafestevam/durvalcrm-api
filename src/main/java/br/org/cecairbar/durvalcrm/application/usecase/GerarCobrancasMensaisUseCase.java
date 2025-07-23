@@ -10,6 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @ApplicationScoped
 public class GerarCobrancasMensaisUseCase {
@@ -63,5 +64,47 @@ public class GerarCobrancasMensaisUseCase {
         }
 
         return new ResultadoGeracaoDTO(geradas, jaExistiam, associadosAtivos.size());
+    }
+
+    @Transactional
+    public ResultadoGeracaoDTO executarParaAssociado(int mes, int ano, UUID associadoId) {
+        // Buscar o associado específico
+        var associadoOpt = associadoRepository.findById(associadoId);
+        
+        if (associadoOpt.isEmpty()) {
+            throw new IllegalArgumentException("Associado não encontrado: " + associadoId);
+        }
+        
+        var associado = associadoOpt.get();
+        
+        if (!associado.isAtivo()) {
+            throw new IllegalArgumentException("Associado não está ativo: " + associadoId);
+        }
+
+        // Verificar se já existe mensalidade para este período
+        if (mensalidadeRepository.existsByAssociadoEPeriodo(associado.getId(), mes, ano)) {
+            return new ResultadoGeracaoDTO(0, 1, 1);
+        }
+
+        // Criar nova mensalidade
+        Mensalidade mensalidade = Mensalidade.criar(
+            associado.getId(), 
+            mes, 
+            ano, 
+            VALOR_MENSALIDADE
+        );
+
+        // Gerar QR Code PIX
+        String qrCode = pixService.gerarQRCode(
+            VALOR_MENSALIDADE,
+            mensalidade.getIdentificadorPix(),
+            String.format("Mensalidade %02d/%d - %s", mes, ano, associado.getNomeCompleto())
+        );
+        mensalidade.setQrCodePix(qrCode);
+
+        // Salvar mensalidade
+        mensalidadeRepository.save(mensalidade);
+
+        return new ResultadoGeracaoDTO(1, 0, 1);
     }
 }

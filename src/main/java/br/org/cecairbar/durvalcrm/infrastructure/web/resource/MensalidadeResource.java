@@ -228,7 +228,8 @@ public class MensalidadeResource {
     @Path("/gerar-cobrancas")
     public Response gerarCobrancas(
         @QueryParam("mes") Integer mes,
-        @QueryParam("ano") Integer ano
+        @QueryParam("ano") Integer ano,
+        @QueryParam("associadoId") String associadoId
     ) {
         try {
             // Se não fornecidos, usar mês/ano atual
@@ -257,7 +258,26 @@ public class MensalidadeResource {
                     .build();
             }
 
-            ResultadoGeracaoDTO resultado = gerarCobrancasUseCase.executar(mes, ano);
+            ResultadoGeracaoDTO resultado;
+            
+            // Se associadoId for fornecido, gerar apenas para esse associado
+            if (associadoId != null && !associadoId.trim().isEmpty()) {
+                try {
+                    UUID associadoUuid = UUID.fromString(associadoId);
+                    resultado = gerarCobrancasUseCase.executarParaAssociado(mes, ano, associadoUuid);
+                } catch (IllegalArgumentException e) {
+                    return Response.status(Response.Status.BAD_REQUEST)
+                        .entity(Map.of(
+                            "error", "ID do associado inválido: " + e.getMessage(),
+                            "status", 400
+                        ))
+                        .build();
+                }
+            } else {
+                // Gerar para todos os associados
+                resultado = gerarCobrancasUseCase.executar(mes, ano);
+            }
+            
             return Response.ok(resultado).build();
             
         } catch (Exception e) {

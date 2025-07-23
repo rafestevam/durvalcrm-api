@@ -228,4 +228,15 @@ public class MensalidadeRepositoryImpl implements MensalidadeRepository {
         .map(entity -> entity.getAssociadoId().toString())
         .collect(Collectors.toList());
     }
+    
+    @Override
+    public List<String> obterAssociadosComMensalidadesVencidas(int mes, int ano) {
+        LocalDate hoje = LocalDate.now();
+        return MensalidadeEntity.<MensalidadeEntity>find(
+            "(status = ?1 or status = ?2) and mesReferencia = ?3 and anoReferencia = ?4 and dataVencimento <= ?5",
+            StatusMensalidade.PENDENTE, StatusMensalidade.ATRASADA, mes, ano, hoje
+        ).stream()
+        .map(entity -> entity.getAssociadoId().toString())
+        .collect(Collectors.toList());
+    }
 }

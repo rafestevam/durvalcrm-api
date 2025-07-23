@@ -63,6 +63,7 @@ public class DashboardUseCaseImpl implements DashboardUseCase {
         // Obter estatísticas de associados
         Long totalAssociados = associadoRepository.count();
         List<String> associadosComMensalidadePaga = mensalidadeRepository.obterAssociadosComStatusPorPeriodo(mes, ano, StatusMensalidade.PAGA);
+        List<String> associadosComMensalidadesVencidas = mensalidadeRepository.obterAssociadosComMensalidadesVencidas(mes, ano);
         Long pagantesMes = (long) associadosComMensalidadePaga.size();
         
         // Obter lista de adimplentes e inadimplentes
@@ -70,18 +71,22 @@ public class DashboardUseCaseImpl implements DashboardUseCase {
         List<AssociadoResumoDTO> inadimplentes = new ArrayList<>();
         
         associadoRepository.findAll().forEach(associado -> {
+            String associadoId = associado.getId().toString();
             AssociadoResumoDTO resumo = AssociadoResumoDTO.builder()
-                .id(associado.getId().toString())
+                .id(associadoId)
                 .nomeCompleto(associado.getNomeCompleto())
                 .email(associado.getEmail())
                 .cpf(associado.getCpf())
                 .build();
             
-            if (associadosComMensalidadePaga.contains(associado.getId().toString())) {
+            if (associadosComMensalidadePaga.contains(associadoId)) {
+                // Associado com mensalidade paga = adimplente
                 adimplentes.add(resumo);
-            } else {
+            } else if (associadosComMensalidadesVencidas.contains(associadoId)) {
+                // Associado com mensalidade vencida (PENDENTE ou ATRASADA e vencida) = inadimplente
                 inadimplentes.add(resumo);
             }
+            // Associados sem mensalidade para o período não aparecem em nenhuma lista
         });
         
         return DashboardDTO.builder()

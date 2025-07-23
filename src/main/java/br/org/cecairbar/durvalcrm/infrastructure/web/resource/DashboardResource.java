@@ -17,7 +17,7 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
-@Path("/api/v1/dashboard")
+@Path("/api/dashboard")
 @Produces(MediaType.APPLICATION_JSON)
 @Tag(name = "Dashboard", description = "Endpoint para dados do dashboard financeiro")
 public class DashboardResource {
