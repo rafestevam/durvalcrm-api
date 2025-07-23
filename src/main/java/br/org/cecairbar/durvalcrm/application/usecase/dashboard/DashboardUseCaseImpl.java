@@ -118,10 +118,9 @@ public class DashboardUseCaseImpl implements DashboardUseCase {
                       "FROM ( " +
                       "SELECT " +
                       "CASE WHEN m.metodo_pagamento = 'PIX' THEN m.valor " +
-                      "WHEN m.metodo_pagamento IS NULL THEN m.valor * 0.7 " +
+                      "WHEN m.metodo_pagamento IS NULL THEN m.valor " +
                       "ELSE 0 END AS total_pix, " +
                       "CASE WHEN m.metodo_pagamento = 'DINHEIRO' THEN m.valor " +
-                      "WHEN m.metodo_pagamento IS NULL THEN m.valor * 0.3 " +
                       "ELSE 0 END AS total_dinheiro " +
                       "FROM mensalidades m " +
                       "WHERE m.status = 'PAGA' " +
