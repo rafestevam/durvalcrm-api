@@ -17,6 +17,7 @@ public class Mensalidade {
     private String qrCodePix;
     private String identificadorPix;
     private Instant criadoEm;
+    private FormaPagamento metodoPagamento;
 
     // Construtor privado para controle da criação
     private Mensalidade() {}
@@ -54,6 +55,15 @@ public class Mensalidade {
         this.dataPagamento = dataPagamento;
     }
 
+    public void marcarComoPaga(Instant dataPagamento, FormaPagamento metodoPagamento) {
+        if (this.status == StatusMensalidade.PAGA) {
+            throw new IllegalStateException("Mensalidade já está paga");
+        }
+        this.status = StatusMensalidade.PAGA;
+        this.dataPagamento = dataPagamento;
+        this.metodoPagamento = metodoPagamento;
+    }
+
     public void atualizarStatus() {
         if (this.status == StatusMensalidade.PENDENTE && 
             LocalDate.now().isAfter(this.dataVencimento)) {
@@ -81,6 +91,7 @@ public class Mensalidade {
     public String getQrCodePix() { return qrCodePix; }
     public String getIdentificadorPix() { return identificadorPix; }
     public Instant getCriadoEm() { return criadoEm; }
+    public FormaPagamento getMetodoPagamento() { return metodoPagamento; }
 
     // Setters (para uso interno e reconstrução)
     public void setId(UUID id) { this.id = id; }

@@ -367,7 +367,12 @@ public class MensalidadeResource {
             UUID mensalidadeId = UUID.fromString(id);
             Instant dataPagamento = dto.getDataPagamento() != null ? dto.getDataPagamento() : Instant.now();
             
-            marcarMensalidadeComoPagaUseCase.executar(mensalidadeId, dataPagamento);
+            // Se método de pagamento for fornecido, usar o método com parâmetro adicional
+            if (dto.getMetodoPagamento() != null) {
+                marcarMensalidadeComoPagaUseCase.executar(mensalidadeId, dataPagamento, dto.getMetodoPagamento());
+            } else {
+                marcarMensalidadeComoPagaUseCase.executar(mensalidadeId, dataPagamento);
+            }
             
             return Response.ok(Map.of("message", "Mensalidade marcada como paga com sucesso")).build();
             
