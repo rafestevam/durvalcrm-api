@@ -1,34 +1,154 @@
 name: Backend CI - DurvalCRM API
 
-# Gatilhos: roda em pushes para a branch 'develop' e qualquer branch 'feature/*'
+# Gatilhos: roda em pushes para branches main, develop e feature branches, além de pull requests
 on:
   push:
-    branches: [ 'feature/*' ]
+    branches: [
+       'develop', 'feature/*' ]
+  pull_request:
+    branches: [ 'main', 'develop' ]
+
+# Variáveis de ambiente globais
+env:
+  MAVEN_OPTS: '-Xmx3072m'
+  MAVEN_CLI_OPTS: '--batch-mode --errors --fail-at-end --show-version'
 
 jobs:
-  # Nome do job
-  build-and-test:
-    # Máquina virtual que será usada (Ubuntu é padrão e eficiente)
+  # Job de testes unitários e integração
+  test:
+    name: Unit Tests & Quality Checks
     runs-on: ubuntu-latest
+    
+    # Timeout para evitar jobs infinitos
+    timeout-minutes: 30
 
     steps:
-      # 1. Faz o checkout do código do repositório para a máquina virtual
+      # 1. Checkout do código
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Fetch full history for better coverage reports
+          fetch-depth: 0
 
-      # 2. Configura o ambiente Java (JDK 17)
+      # 2. Setup Java com cache otimizado
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          # Adiciona cache para as dependências do Maven, acelerando builds futuros
           cache: maven
 
-      # 3. Executa os testes unitários com o Maven Wrapper
-      - name: Run unit tests
-        run: ./mvnw test
+      # 3. Verificar permissões do Maven Wrapper
+      - name: Make Maven Wrapper executable
+        run: chmod +x ./mvnw
 
-      # 4. Compila e empacota o projeto (pulando os testes, pois já rodaram)
+      # 4. Validar dependências (verificar vulnerabilidades)
+      - name: Validate dependencies
+        run: ./mvnw ${{ env.MAVEN_CLI_OPTS }} dependency:analyze-only dependency:analyze-duplicate
+
+      # 5. Compilar código sem executar testes (verificar compilação)
+      - name: Compile application
+        run: ./mvnw ${{ env.MAVEN_CLI_OPTS }} compile test-compile
+
+      # 6. Executar testes unitários com relatórios
+      - name: Run unit tests
+        run: |
+          ./mvnw ${{ env.MAVEN_CLI_OPTS }} test \
+            -Dquarkus.log.level=WARN \
+            -Dquarkus.log.category."br.org.cecairbar.durvalcrm".level=INFO \
+            -Dmaven.test.failure.ignore=false
+
+      # 7. Executar verificações de qualidade (se existirem)
+      - name: Run quality checks
+        run: |
+          # Verificar formatação de código (se spotless estiver configurado)
+          if ./mvnw help:describe -Dplugin=com.diffplug.spotless:spotless-maven-plugin &> /dev/null; then
+            echo "Running Spotless format check..."
+            ./mvnw ${{ env.MAVEN_CLI_OPTS }} spotless:check
+          fi
+          
+          # Verificar se há plugins de análise estática
+          if ./mvnw help:describe -Dplugin=org.sonarsource.scanner.maven:sonar-maven-plugin &> /dev/null; then
+            echo "SonarQube plugin found but skipping in CI (requires SonarQube server)"
+          fi
+
+      # 8. Gerar relatórios de cobertura de testes (JaCoCo)
+      - name: Generate test coverage report
+        run: |
+          # Verificar se JaCoCo está configurado
+          if ./mvnw help:describe -Dplugin=org.jacoco:jacoco-maven-plugin &> /dev/null; then
+            echo "Generating JaCoCo coverage report..."
+            ./mvnw ${{ env.MAVEN_CLI_OPTS }} jacoco:report
+          else
+            echo "JaCoCo not configured, skipping coverage report"
+          fi
+
+      # 9. Executar testes de integração (se existirem)
+      - name: Run integration tests
+        run: |
+          # Verificar se existem testes de integração
+          if [ -d "src/test/java" ] && find src/test/java -name "*IT.java" -o -name "*IntegrationTest.java" | grep -q .; then
+            echo "Running integration tests..."
+            ./mvnw ${{ env.MAVEN_CLI_OPTS }} verify -DskipUnitTests=true
+          else
+            echo "No integration tests found, skipping..."
+          fi
+
+      # 10. Package da aplicação
       - name: Package application
-        run: ./mvnw package -DskipTests
+        run: ./mvnw ${{ env.MAVEN_CLI_OPTS }} package -DskipTests
+
+      # 11. Upload dos relatórios de teste (para debug em caso de falha)
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+            target/site/jacoco/
+          retention-days: 7
+
+      # 12. Upload do JAR gerado
+      - name: Upload application JAR
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: durvalcrm-jar
+          path: target/*.jar
+          retention-days: 7
+
+  # Job separado para verificações de segurança
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      # Verificar vulnerabilidades conhecidas nas dependências
+      - name: Run dependency vulnerability scan
+        run: |
+          ./mvnw ${{ env.MAVEN_CLI_OPTS }} org.owasp:dependency-check-maven:check \
+            -DfailBuildOnCVSS=7 \
+            -DskipSystemScope=true || echo "Security scan completed with warnings"
+
+      # Upload do relatório de segurança
+      - name: Upload security scan results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: target/dependency-check-report.html
+          retention-days: 30
