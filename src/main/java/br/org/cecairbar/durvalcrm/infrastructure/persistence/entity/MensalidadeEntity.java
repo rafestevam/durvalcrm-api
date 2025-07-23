@@ -2,6 +2,7 @@ package br.org.cecairbar.durvalcrm.infrastructure.persistence.entity;
 
 import br.org.cecairbar.durvalcrm.domain.model.Mensalidade;
 import br.org.cecairbar.durvalcrm.domain.model.StatusMensalidade;
+import br.org.cecairbar.durvalcrm.domain.model.FormaPagamento;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -52,6 +53,10 @@ public class MensalidadeEntity extends PanacheEntityBase {
     @Column(name = "criado_em", nullable = false, updatable = false)
     public Instant criadoEm;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "metodo_pagamento")
+    public FormaPagamento metodoPagamento;
+
     public static MensalidadeEntity fromDomain(Mensalidade mensalidade) {
         MensalidadeEntity entity = new MensalidadeEntity();
         entity.id = mensalidade.getId();
@@ -65,6 +70,7 @@ public class MensalidadeEntity extends PanacheEntityBase {
         entity.qrCodePix = mensalidade.getQrCodePix();
         entity.identificadorPix = mensalidade.getIdentificadorPix();
         entity.criadoEm = mensalidade.getCriadoEm();
+        entity.metodoPagamento = mensalidade.getMetodoPagamento();
         return entity;
     }
 
@@ -100,6 +106,7 @@ public class MensalidadeEntity extends PanacheEntityBase {
         this.status = mensalidade.getStatus();
         this.identificadorPix = mensalidade.getIdentificadorPix();
         this.qrCodePix = mensalidade.getQrCodePix();
+        this.metodoPagamento = mensalidade.getMetodoPagamento();
     }
     
     // Getters necessários para os repositórios

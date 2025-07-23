@@ -2,6 +2,7 @@ package br.org.cecairbar.durvalcrm.application.usecase.dashboard;
 
 import br.org.cecairbar.durvalcrm.application.dto.DashboardDTO;
 import br.org.cecairbar.durvalcrm.application.dto.DashboardDTO.AssociadoResumoDTO;
+import br.org.cecairbar.durvalcrm.application.dto.ReceitasPorMetodoPagamentoDTO;
 import br.org.cecairbar.durvalcrm.domain.model.OrigemVenda;
 import br.org.cecairbar.durvalcrm.domain.model.StatusMensalidade;
 import br.org.cecairbar.durvalcrm.domain.repository.AssociadoRepository;
@@ -11,6 +12,7 @@ import br.org.cecairbar.durvalcrm.domain.repository.DoacaoRepository;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,6 +36,9 @@ public class DashboardUseCaseImpl implements DashboardUseCase {
     
     @Inject
     DoacaoRepository doacaoRepository;
+    
+    @Inject
+    EntityManager entityManager;
     
     @Override
     public DashboardDTO obterDashboard(int mes, int ano) {
@@ -100,6 +105,64 @@ public class DashboardUseCaseImpl implements DashboardUseCase {
             .totalAssociados(totalAssociados)
             .adimplentes(adimplentes)
             .inadimplentes(inadimplentes)
+            .build();
+    }
+    
+    @Override
+    public ReceitasPorMetodoPagamentoDTO obterReceitasPorMetodoPagamento() {
+        // Query para obter totais por método de pagamento de TODAS as receitas
+        // Combina mensalidades pagas + vendas + doações confirmadas
+        String jpql = "SELECT " +
+                      "COALESCE(SUM(total_pix), 0) AS total_pix, " +
+                      "COALESCE(SUM(total_dinheiro), 0) AS total_dinheiro " +
+                      "FROM ( " +
+                      "SELECT " +
+                      "CASE WHEN m.metodo_pagamento = 'PIX' THEN m.valor " +
+                      "WHEN m.metodo_pagamento IS NULL THEN m.valor " +
+                      "ELSE 0 END AS total_pix, " +
+                      "CASE WHEN m.metodo_pagamento = 'DINHEIRO' THEN m.valor " +
+                      "ELSE 0 END AS total_dinheiro " +
+                      "FROM mensalidades m " +
+                      "WHERE m.status = 'PAGA' " +
+                      "UNION ALL " +
+                      "SELECT " +
+                      "CASE WHEN v.forma_pagamento = 'PIX' THEN v.valor ELSE 0 END AS total_pix, " +
+                      "CASE WHEN v.forma_pagamento = 'DINHEIRO' THEN v.valor ELSE 0 END AS total_dinheiro " +
+                      "FROM vendas v " +
+                      "UNION ALL " +
+                      "SELECT " +
+                      "CASE WHEN d.metodo_pagamento = 'PIX' THEN d.valor ELSE 0 END AS total_pix, " +
+                      "CASE WHEN d.metodo_pagamento = 'DINHEIRO' THEN d.valor ELSE 0 END AS total_dinheiro " +
+                      "FROM doacoes d " +
+                      "WHERE d.status = 'CONFIRMADA' " +
+                      ") AS receitas_consolidadas";
+        
+        System.out.println("Executando query de receitas por método:");
+        System.out.println(jpql);
+        
+        var query = entityManager.createNativeQuery(jpql);
+        var resultado = query.getSingleResult();
+        
+        BigDecimal totalPix = BigDecimal.ZERO;
+        BigDecimal totalDinheiro = BigDecimal.ZERO;
+        
+        if (resultado != null) {
+            Object[] row = (Object[]) resultado;
+            totalPix = (BigDecimal) row[0];
+            totalDinheiro = (BigDecimal) row[1];
+        }
+        
+        BigDecimal totalGeral = totalPix.add(totalDinheiro);
+        
+        System.out.println("Receitas consolidadas por método:");
+        System.out.println("  PIX: R$ " + totalPix);
+        System.out.println("  Dinheiro: R$ " + totalDinheiro);
+        System.out.println("  Total: R$ " + totalGeral);
+        
+        return ReceitasPorMetodoPagamentoDTO.builder()
+            .totalPix(totalPix)
+            .totalDinheiro(totalDinheiro)
+            .totalGeral(totalGeral)
             .build();
     }
 }
