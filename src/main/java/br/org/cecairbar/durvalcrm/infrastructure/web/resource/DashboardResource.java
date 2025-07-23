@@ -57,4 +57,13 @@ public class DashboardResource {
         DashboardDTO dashboard = dashboardUseCase.obterDashboard(mes, ano);
         return Response.ok(dashboard).build();
     }
+    
+    @GET
+    @Path("/receitas-por-metodo-pagamento")
+    @Operation(summary = "Obter receitas por método de pagamento", description = "Retorna o total de receitas recebidas via PIX e Dinheiro")
+    @APIResponse(responseCode = "200", description = "Receitas por método de pagamento obtidas com sucesso")
+    public Response obterReceitasPorMetodoPagamento() {
+        var receitas = dashboardUseCase.obterReceitasPorMetodoPagamento();
+        return Response.ok(receitas).build();
+    }
 }

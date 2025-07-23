@@ -2,6 +2,7 @@ package br.org.cecairbar.durvalcrm.application.usecase.dashboard;
 
 import br.org.cecairbar.durvalcrm.application.dto.DashboardDTO;
 import br.org.cecairbar.durvalcrm.application.dto.DashboardDTO.AssociadoResumoDTO;
+import br.org.cecairbar.durvalcrm.application.dto.ReceitasPorMetodoPagamentoDTO;
 import br.org.cecairbar.durvalcrm.domain.model.OrigemVenda;
 import br.org.cecairbar.durvalcrm.domain.model.StatusMensalidade;
 import br.org.cecairbar.durvalcrm.domain.repository.AssociadoRepository;
@@ -11,6 +12,7 @@ import br.org.cecairbar.durvalcrm.domain.repository.DoacaoRepository;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.persistence.EntityManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -34,6 +36,9 @@ public class DashboardUseCaseImpl implements DashboardUseCase {
     
     @Inject
     DoacaoRepository doacaoRepository;
+    
+    @Inject
+    EntityManager entityManager;
     
     @Override
     public DashboardDTO obterDashboard(int mes, int ano) {
@@ -100,6 +105,41 @@ public class DashboardUseCaseImpl implements DashboardUseCase {
             .totalAssociados(totalAssociados)
             .adimplentes(adimplentes)
             .inadimplentes(inadimplentes)
+            .build();
+    }
+    
+    @Override
+    public ReceitasPorMetodoPagamentoDTO obterReceitasPorMetodoPagamento() {
+        // Query para obter totais por método de pagamento
+        String jpql = "SELECT p.metodo_pagamento, SUM(p.valor_pago) " +
+                      "FROM pagamentos p " +
+                      "WHERE p.reconciliado = true " +
+                      "GROUP BY p.metodo_pagamento";
+        
+        var query = entityManager.createNativeQuery(jpql);
+        var resultados = query.getResultList();
+        
+        BigDecimal totalPix = BigDecimal.ZERO;
+        BigDecimal totalDinheiro = BigDecimal.ZERO;
+        
+        for (Object resultado : resultados) {
+            Object[] row = (Object[]) resultado;
+            String metodoPagamento = (String) row[0];
+            BigDecimal valor = (BigDecimal) row[1];
+            
+            if ("PIX".equalsIgnoreCase(metodoPagamento)) {
+                totalPix = valor != null ? valor : BigDecimal.ZERO;
+            } else if ("DINHEIRO".equalsIgnoreCase(metodoPagamento)) {
+                totalDinheiro = valor != null ? valor : BigDecimal.ZERO;
+            }
+        }
+        
+        BigDecimal totalGeral = totalPix.add(totalDinheiro);
+        
+        return ReceitasPorMetodoPagamentoDTO.builder()
+            .totalPix(totalPix)
+            .totalDinheiro(totalDinheiro)
+            .totalGeral(totalGeral)
             .build();
     }
 }
