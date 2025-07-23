@@ -3,7 +3,7 @@ name: Backend CI - DurvalCRM API
 # Gatilhos: roda em pushes para a branch 'develop' e qualquer branch 'feature/*'
 on:
   push:
-    branches: [ develop, 'feature/*' ]
+    branches: [ 'feature/*' ]
 
 jobs:
   # Nome do job
