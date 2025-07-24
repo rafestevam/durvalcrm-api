@@ -179,14 +179,12 @@ jobs:
           retention-days: 7
 
       # 13. Build e Push da imagem de container
-      - name: 13. Build e Push da imagem de container para Docker Hub
+      - name: Build e Push da imagem de container para Docker Hub
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        working-directory: ./durvalcrm-api
         env:
           IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/durvalcrm-api
         run: |
-          cd durvalcrm-api
-          
-          # Login no Docker Hub
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
           
           # Build da imagem usando o Dockerfile existente
