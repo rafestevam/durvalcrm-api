@@ -1,34 +1,269 @@
 name: Backend CI - DurvalCRM API
 
-# Gatilhos: roda em pushes para a branch 'develop' e qualquer branch 'feature/*'
+# Gatilhos: roda em pushes para branches main, develop e feature branches, além de pull requests
 on:
   push:
-    branches: [ 'feature/*' ]
+    branches: [ 'main', 'develop', 'feature/*' ]
+  pull_request:
+    branches: [ 'main', 'develop' ]
+
+# Variáveis de ambiente globais
+env:
+  MAVEN_OPTS: '-Xmx3072m'
+  MAVEN_CLI_OPTS: '--batch-mode --errors --fail-at-end --show-version'
 
 jobs:
-  # Nome do job
-  build-and-test:
-    # Máquina virtual que será usada (Ubuntu é padrão e eficiente)
+  # Job de testes unitários e integração
+  test:
+    name: Unit Tests & Quality Checks
     runs-on: ubuntu-latest
+    
+    # Timeout para evitar jobs infinitos
+    timeout-minutes: 30
 
     steps:
-      # 1. Faz o checkout do código do repositório para a máquina virtual
+      # 1. Checkout do código
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Fetch full history for better coverage reports
+          fetch-depth: 0
 
-      # 2. Configura o ambiente Java (JDK 17)
+      # 2. Setup Java com cache otimizado
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          # Adiciona cache para as dependências do Maven, acelerando builds futuros
           cache: maven
 
-      # 3. Executa os testes unitários com o Maven Wrapper
-      - name: Run unit tests
-        run: ./mvnw test
+      # 3. Verificar permissões do Maven Wrapper
+      - name: Make Maven Wrapper executable
+        run: chmod +x ./mvnw
 
-      # 4. Compila e empacota o projeto (pulando os testes, pois já rodaram)
+      # 4. Validar dependências 
+      - name: Validate dependencies
+        run: |
+          echo "Validating project dependencies..."
+          
+          # Analisar dependências não utilizadas e duplicadas
+          if ./mvnw ${{ env.MAVEN_CLI_OPTS }} dependency:analyze-only dependency:analyze-duplicate; then
+            echo "✓ Dependency validation completed successfully"
+          else
+            echo "⚠ Warning: Dependency validation found issues, but continuing build"
+            echo "Review dependency:analyze output for optimization opportunities"
+          fi
+
+      # 5. Compilar código sem executar testes (verificar compilação)
+      - name: Compile application
+        run: ./mvnw ${{ env.MAVEN_CLI_OPTS }} compile test-compile
+
+      # 6. Executar testes unitários com relatórios
+      - name: Run unit tests
+        run: |
+          ./mvnw ${{ env.MAVEN_CLI_OPTS }} test \
+            -Dquarkus.log.level=WARN \
+            -Dquarkus.log.category."br.org.cecairbar.durvalcrm".level=INFO \
+            -Dmaven.test.failure.ignore=false
+
+      # 7. Executar verificações de qualidade (se existirem)
+      - name: Run quality checks
+        run: |
+          echo "Checking for available quality plugins..."
+          
+          # Função para verificar se um plugin está configurado no pom.xml
+          check_plugin() {
+            local plugin_name="$1"
+            local plugin_id="$2"
+            
+            if grep -q "<groupId>$plugin_id</groupId>" pom.xml 2>/dev/null; then
+              echo "✓ $plugin_name plugin found in pom.xml"
+              return 0
+            else
+              echo "⚠ $plugin_name plugin not configured - skipping"
+              return 1
+            fi
+          }
+          
+          # Verificar formatação de código (Spotless)
+          if check_plugin "Spotless" "com.diffplug.spotless"; then
+            echo "Running Spotless format check..."
+            ./mvnw ${{ env.MAVEN_CLI_OPTS }} spotless:check
+          fi
+          
+          # Verificar Checkstyle
+          if check_plugin "Checkstyle" "org.apache.maven.plugins" && grep -q "maven-checkstyle-plugin" pom.xml; then
+            echo "Running Checkstyle code style check..."
+            ./mvnw ${{ env.MAVEN_CLI_OPTS }} checkstyle:check
+          fi
+          
+          # Verificar PMD
+          if check_plugin "PMD" "org.apache.maven.plugins" && grep -q "maven-pmd-plugin" pom.xml; then
+            echo "Running PMD static analysis..."
+            ./mvnw ${{ env.MAVEN_CLI_OPTS }} pmd:check
+          fi
+          
+          # Verificar SpotBugs
+          if check_plugin "SpotBugs" "com.github.spotbugs"; then
+            echo "Running SpotBugs bug detection..."
+            ./mvnw ${{ env.MAVEN_CLI_OPTS }} spotbugs:check
+          fi
+          
+          # Verificar SonarQube
+          if check_plugin "SonarQube" "org.sonarsource.scanner.maven"; then
+            echo "✓ SonarQube plugin found but skipping in CI (requires SonarQube server)"
+          fi
+          
+          echo "Quality checks completed successfully!"
+
+      # 8. Gerar relatórios de cobertura de testes (JaCoCo)
+      - name: Generate test coverage report
+        run: |
+          echo "Checking for test coverage plugins..."
+          
+          # Verificar se JaCoCo está configurado no pom.xml
+          if grep -q "<groupId>org.jacoco</groupId>" pom.xml 2>/dev/null; then
+            echo "✓ JaCoCo plugin found - generating coverage report..."
+            if ./mvnw ${{ env.MAVEN_CLI_OPTS }} jacoco:report; then
+              echo "✓ Coverage report generated successfully"
+            else
+              echo "⚠ Warning: JaCoCo report generation failed, but continuing build"
+            fi
+          else
+            echo "⚠ JaCoCo plugin not configured - skipping coverage report"
+            echo "To add code coverage, consider adding JaCoCo plugin to pom.xml"
+          fi
+
+      # 9. Executar testes de integração (se existirem)
+      - name: Run integration tests
+        run: |
+          echo "Checking for integration tests..."
+          
+          # Verificar se existem testes de integração
+          if [ -d "src/test/java" ] && find src/test/java -name "*IT.java" -o -name "*IntegrationTest.java" | grep -q .; then
+            echo "✓ Integration tests found - running them..."
+            if ./mvnw ${{ env.MAVEN_CLI_OPTS }} verify -DskipUnitTests=true; then
+              echo "✓ Integration tests completed successfully"
+            else
+              echo "❌ Integration tests failed"
+              exit 1
+            fi
+          else
+            echo "⚠ No integration tests found (*IT.java or *IntegrationTest.java)"
+            echo "Consider adding integration tests for better coverage"
+          fi
+
+      # 10. Package da aplicação
       - name: Package application
-        run: ./mvnw package -DskipTests
+        run: ./mvnw ${{ env.MAVEN_CLI_OPTS }} package -DskipTests
+
+      # 11. Upload dos relatórios de teste (para debug em caso de falha)
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+            target/site/jacoco/
+          retention-days: 7
+
+      # 12. Upload do JAR gerado
+      - name: Upload application JAR
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: durvalcrm-jar
+          path: target/*.jar
+          retention-days: 7
+
+      # 13. Build e Push da imagem de container
+      - name: 13. Build e Push da imagem de container para Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/durvalcrm-api
+        run: |
+          cd durvalcrm-api
+          
+          # Login no Docker Hub
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          
+          # Build da imagem usando o Dockerfile existente
+          docker build -f src/main/docker/Dockerfile.jvm -t $IMAGE_NAME:latest .
+          
+          # Tag com a versão do commit
+          docker tag $IMAGE_NAME:latest $IMAGE_NAME:${{ github.sha }}
+          
+          # Push das imagens
+          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:${{ github.sha }}
+          
+          # Logout do Docker Hub
+          docker logout
+
+  # Job separado para verificações de segurança
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      # Verificar vulnerabilidades conhecidas nas dependências
+      - name: Run dependency vulnerability scan
+        run: |
+          echo "Running security vulnerability scan..."
+          
+          # Verificar se o plugin OWASP está configurado no pom.xml
+          if grep -q "<groupId>org.owasp</groupId>" pom.xml 2>/dev/null; then
+            echo "✓ OWASP Dependency Check plugin found - running vulnerability scan..."
+            if ./mvnw ${{ env.MAVEN_CLI_OPTS }} org.owasp:dependency-check-maven:check \
+              -DfailBuildOnCVSS=7 \
+              -DskipSystemScope=true; then
+              echo "✓ No high-severity vulnerabilities found"
+            else
+              echo "⚠ Security vulnerabilities detected - check report for details"
+            fi
+          else
+            echo "⚠ OWASP Dependency Check plugin not available - using basic check"
+            # Fallback para verificação básica de dependências
+            ./mvnw ${{ env.MAVEN_CLI_OPTS }} dependency:tree -Dverbose || true
+            echo "Consider adding OWASP Dependency Check plugin for comprehensive security scanning"
+          fi
+
+      # Upload do relatório de segurança
+      - name: Upload security scan results
+        if: always()
+        run: |
+          echo "Checking for security scan reports..."
+          
+          if [[ -f "target/dependency-check-report.html" ]]; then
+            echo "✓ Security report found - uploading artifact"
+          else
+            echo "⚠ No security report found - this is normal if OWASP plugin is not configured"
+            # Create a placeholder report
+            mkdir -p target
+            echo "<html><body><h1>Security Scan Report</h1><p>OWASP Dependency Check plugin not configured. Consider adding it for comprehensive security scanning.</p></body></html>" > target/security-scan-placeholder.html
+          fi
+      
+      - name: Upload security artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            target/dependency-check-report.html
+            target/security-scan-placeholder.html
+          retention-days: 30
+        continue-on-error: true

@@ -24,23 +24,9 @@ public class AuthResourceMockTest {
         authResource = new AuthResource();
         authResource.jwt = jwt;
         
-        // Simula configurações através de reflexão para os testes
-        try {
-            var authServerUrlField = AuthResource.class.getDeclaredField("authServerUrl");
-            authServerUrlField.setAccessible(true);
-            authServerUrlField.set(authResource, "http://localhost:8080/realms/durval-crm");
-            
-            var clientIdField = AuthResource.class.getDeclaredField("clientId");
-            clientIdField.setAccessible(true);
-            clientIdField.set(authResource, "durvalcrm-app");
-            
-            var clientSecretField = AuthResource.class.getDeclaredField("clientSecret");
-            clientSecretField.setAccessible(true);
-            clientSecretField.set(authResource, "test-secret");
-            
-        } catch (Exception e) {
-            throw new RuntimeException("Erro ao configurar testes", e);
-        }
+        // Simula configurações através da definição direta dos campos (são package-private)
+        authResource.authServerUrl = "http://localhost:8080/realms/durval-crm";
+        authResource.clientId = "durvalcrm-app";
     }
 
     @Test

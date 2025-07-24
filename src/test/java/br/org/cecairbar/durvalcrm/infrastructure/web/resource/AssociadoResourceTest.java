@@ -6,9 +6,6 @@ import io.quarkus.test.security.TestSecurity;
 import io.restassured.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Order;
 import jakarta.transaction.Transactional;
 
 import static io.restassured.RestAssured.given;
@@ -17,7 +14,6 @@ import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.hasSize;
 
 @QuarkusTest
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class AssociadoResourceTest {
 
     @BeforeEach
@@ -25,10 +21,12 @@ public class AssociadoResourceTest {
     public void cleanDatabase() {
         // Limpa o banco antes de cada teste para garantir isolamento
         AssociadoEntity.deleteAll();
+        // Força a persistência da transação
+        AssociadoEntity.getEntityManager().flush();
+        AssociadoEntity.getEntityManager().clear();
     }
 
     @Test
-    @Order(1)
     @TestSecurity(user = "testuser", roles = { "user" })
     void testFindAllEndpoint_ReturnsEmptyListInitially() {
         given()
@@ -41,7 +39,6 @@ public class AssociadoResourceTest {
     }
 
     @Test
-    @Order(2)
     @TestSecurity(user = "testuser", roles = { "user" })
     void testCreateAssociado_Success() {
         String novoAssociadoJson = """
@@ -69,7 +66,6 @@ public class AssociadoResourceTest {
     }
 
     @Test
-    @Order(3)
     @TestSecurity(user = "testuser", roles = { "user" })
     void testCreateAssociado_WithInvalidData_ShouldReturnBadRequest() {
         String invalidAssociadoJson = """
@@ -90,7 +86,6 @@ public class AssociadoResourceTest {
     }
 
     @Test
-    @Order(4)
     @TestSecurity(user = "testuser", roles = { "user" })
     void testCreateAssociado_WithDuplicateCpf_ShouldReturnConflict() {
         String associadoJson = """
@@ -131,7 +126,6 @@ public class AssociadoResourceTest {
     }
 
     @Test
-    @Order(5)
     @TestSecurity(user = "testuser", roles = { "user" })
     void testFindAllEndpoint_AfterCreation() {
         // Primeiro cria um associado
@@ -164,7 +158,6 @@ public class AssociadoResourceTest {
     }
 
     @Test
-    @Order(6)
     @TestSecurity(user = "testuser", roles = { "user" })
     void testFindById_WithValidId_ShouldReturnAssociado() {
         // Primeiro cria um associado
@@ -199,7 +192,6 @@ public class AssociadoResourceTest {
     }
 
     @Test
-    @Order(7)
     @TestSecurity(user = "testuser", roles = { "user" })
     void testFindById_WithInvalidId_ShouldReturnNotFound() {
         String invalidId = "123e4567-e89b-12d3-a456-426614174000";
@@ -212,7 +204,6 @@ public class AssociadoResourceTest {
     }
 
     @Test
-    @Order(8)
     @TestSecurity(user = "testuser", roles = { "user" })
     void testUpdateAssociado_WithValidData_ShouldUpdateSuccessfully() {
         // Primeiro cria um associado
@@ -260,7 +251,6 @@ public class AssociadoResourceTest {
     }
 
     @Test
-    @Order(9)
     @TestSecurity(user = "testuser", roles = { "user" })
     void testDeleteAssociado_WithValidId_ShouldDeleteSuccessfully() {
         // Primeiro cria um associado
@@ -299,7 +289,6 @@ public class AssociadoResourceTest {
     }
 
     @Test
-    @Order(10)
     @TestSecurity(user = "testuser", roles = { "user" })
     void testSearchAssociados_WithValidQuery_ShouldReturnFilteredResults() {
         // Cria alguns associados para teste de busca
