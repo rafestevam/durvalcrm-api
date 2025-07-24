@@ -181,7 +181,7 @@ jobs:
       # 13. Build e Push da imagem de container
       - name: Build e Push da imagem de container para Docker Hub
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        working-directory: durvalcrm-api
+        working-directory: /home/runner/work/durvalcrm-api
         env:
           IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/durvalcrm-api
         run: |
