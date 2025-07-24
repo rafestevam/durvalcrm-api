@@ -178,6 +178,30 @@ jobs:
           path: target/*.jar
           retention-days: 7
 
+      # 13. Build e Push da imagem de container
+      - name: 13. Build e Push da imagem de container para Docker Hub
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/durvalcrm-api
+        run: |
+          cd durvalcrm-api
+          
+          # Login no Docker Hub
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          
+          # Build da imagem usando o Dockerfile existente
+          docker build -f src/main/docker/Dockerfile.jvm -t $IMAGE_NAME:latest .
+          
+          # Tag com a versão do commit
+          docker tag $IMAGE_NAME:latest $IMAGE_NAME:${{ github.sha }}
+          
+          # Push das imagens
+          docker push $IMAGE_NAME:latest
+          docker push $IMAGE_NAME:${{ github.sha }}
+          
+          # Logout do Docker Hub
+          docker logout
+
   # Job separado para verificações de segurança
   security-scan:
     name: Security Scan
